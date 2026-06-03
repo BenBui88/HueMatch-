@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuthStore, useMatchStore } from '../store'
+import { useAuthStore, useMatchStore } from '../store/index'
 
 const SKIN_TONES = [
   { hex: '#FDDBB4', name: 'Fair porcelain',  undertone: 'cool' },
