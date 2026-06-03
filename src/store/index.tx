@@ -1,0 +1,66 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+export type UserRole = 'client' | 'tech' | 'owner' | null
+
+interface AuthState {
+  role: UserRole
+  userId: string | null
+  userName: string | null
+  userColor: string
+  setRole: (role: UserRole) => void
+  setUser: (id: string, name: string, color: string) => void
+  signOut: () => void
+}
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      role: null, userId: null, userName: null, userColor: '#C4546A',
+      setRole:  (role) => set({ role }),
+      setUser:  (userId, userName, userColor) => set({ userId, userName, userColor }),
+      signOut:  () => set({ role: null, userId: null, userName: null }),
+    }),
+    { name: 'huematch-auth' }
+  )
+)
+
+interface MatchState {
+  outfitHex: string
+  skinHex: string
+  skinName: string
+  undertone: string
+  nailType: 'Gel' | 'Regular' | 'SNS'
+  setOutfit: (hex: string) => void
+  setSkin: (hex: string, name: string, undertone: string) => void
+  setNailType: (type: 'Gel' | 'Regular' | 'SNS') => void
+  reset: () => void
+}
+export const useMatchStore = create<MatchState>()((set) => ({
+  outfitHex: '#7C5C8A', skinHex: '', skinName: '', undertone: 'neutral', nailType: 'Gel',
+  setOutfit:   (outfitHex) => set({ outfitHex }),
+  setSkin:     (skinHex, skinName, undertone) => set({ skinHex, skinName, undertone }),
+  setNailType: (nailType) => set({ nailType }),
+  reset:       () => set({ skinHex: '', skinName: '', outfitHex: '#7C5C8A' }),
+}))
+
+interface ClientState {
+  pts: number
+  savedLooks: string[]
+  following: string[]
+  addPts: (n: number) => void
+  saveLook: (id: string) => void
+  follow: (techId: string) => void
+  unfollow: (techId: string) => void
+}
+export const useClientStore = create<ClientState>()(
+  persist(
+    (set, get) => ({
+      pts: 1240, savedLooks: [], following: [],
+      addPts:   (n)  => set({ pts: get().pts + n }),
+      saveLook: (id) => set({ savedLooks: [...get().savedLooks, id] }),
+      follow:   (id) => set({ following: [...get().following, id] }),
+      unfollow: (id) => set({ following: get().following.filter(f => f !== id) }),
+    }),
+    { name: 'huematch-client' }
+  )
+)
