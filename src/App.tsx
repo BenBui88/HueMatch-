@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useAuthStore } from './store'
+import { useAuthStore } from './store/index'
 import LandingPage from './pages/LandingPage'
 import MatchScreen from './pages/MatchScreen'
 
