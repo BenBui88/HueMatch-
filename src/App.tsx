@@ -42,11 +42,7 @@ function LandingPage() {
   return (
     <div style={{ fontFamily: 'Outfit, sans-serif', display: 'flex', flexDirection: 'column', minHeight: '100%', padding: '2rem 1.5rem' }}>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#FDF0F2', border: '2px solid #F4C0D1', margin: '0 auto 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>✦</div>
-        <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 300, margin: 0 }}>
-          <span style={{ color: '#C4546A' }}>Hue</span><span style={{ color: '#2C2B4B' }}>Match</span>
-        </h1>
-        <p style={{ fontFamily: 'Cormorant Garamond, serif', fontStyle: 'italic', color: '#a0a0b0', marginTop: 4 }}>Match your nails. Match your style.</p>
+       <img src="/logo.png" alt="HueMatch" style={{ width: 200, height: 200, objectFit: 'contain', margin: '0 auto 0.5rem', display: 'block' }} />
       </div>
 
       <div style={{ background: '#f8f7f9', borderRadius: 12, padding: '1rem', marginBottom: '1.5rem', border: '0.5px solid #eee' }}>
