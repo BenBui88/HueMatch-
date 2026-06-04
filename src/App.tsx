@@ -107,8 +107,7 @@ padding: '1.25rem 1.5rem 1.5rem',
 zIndex: 50,
 boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
           }}>
-            {/* Handle bar */}
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: '#ddd', margin: '0 auto 1rem' }} />
+           
 
             {/* Title */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
