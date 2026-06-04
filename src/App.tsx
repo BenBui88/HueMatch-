@@ -209,7 +209,7 @@ function MatchScreen() {
     <div style={{ fontFamily: 'Outfit, sans-serif', display: 'flex', flexDirection: 'column', minHeight: '100%', paddingBottom: 80 }}>
 
       {/* Hidden file inputs */}
-      <input ref={outfitInputRef} type="file" accept="image/*" capture="environment"
+      <input ref={outfitInputRef} type="file" accept="image/*"
         onChange={handleOutfitFile} style={{ display: 'none' }} />
       <input ref={skinInputRef} type="file" accept="image/*" capture="user"
         onChange={handleSkinFile} style={{ display: 'none' }} />
