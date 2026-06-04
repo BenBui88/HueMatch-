@@ -295,4 +295,141 @@ export default function OwnerScreen() {
             <input value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} placeholder="you@email.com" type="email"
               style={{ width: '100%', height: 42, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 12px', fontSize: 14, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif' }} />
           </div>
-          <SettingRow icon="🔒" label="Change password"
+          <SettingRow icon="🔒" label="Change password" />
+
+          {/* HueMatch section */}
+          <SectionLabel label="HueMatch" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 18px', borderBottom: '0.5px solid #eee' }}>
+            <span style={{ fontSize: 18, width: 24, textAlign: 'center', flexShrink: 0 }}>🗺️</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#1a1a2e', margin: 0 }}>Visible on salon map</p>
+              <p style={{ fontSize: 11, color: '#a0a0b0', margin: '2px 0 0' }}>Clients can find your salon on the map</p>
+            </div>
+            <Toggle on={mapVisible} onChange={() => setMapVisible(!mapVisible)} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 18px', borderBottom: '0.5px solid #eee' }}>
+            <span style={{ fontSize: 18, width: 24, textAlign: 'center', flexShrink: 0 }}>🔔</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#1a1a2e', margin: 0 }}>Notifications</p>
+              <p style={{ fontSize: 11, color: '#a0a0b0', margin: '2px 0 0' }}>New bookings, reviews, rewards</p>
+            </div>
+            <Toggle on={notifications} onChange={() => setNotifications(!notifications)} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 18px', borderBottom: '0.5px solid #eee' }}>
+            <span style={{ fontSize: 18, width: 24, textAlign: 'center', flexShrink: 0 }}>💬</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#1a1a2e', margin: 0 }}>Client messaging</p>
+              <p style={{ fontSize: 11, color: '#a0a0b0', margin: '2px 0 0' }}>Allow clients to message directly</p>
+            </div>
+            <Toggle on={clientMsg} onChange={() => setClientMsg(!clientMsg)} />
+          </div>
+
+          {/* Support section */}
+          <SectionLabel label="Support" />
+          <SettingRow icon="❓" label="Help center" />
+          <SettingRow icon="📞" label="Contact HueMatch" />
+          <SettingRow icon="📄" label="Terms & privacy" />
+
+          {/* Save + Sign out */}
+          <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button onClick={saveProfile}
+              style={{ width: '100%', height: 48, background: profileSaved ? '#1D9E75' : '#C4546A', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 500, fontFamily: 'Outfit, sans-serif', cursor: 'pointer', transition: 'background 0.3s' }}>
+              {profileSaved ? '✓ Saved!' : 'Save profile ✦'}
+            </button>
+            <button onClick={() => navigate('/')}
+              style={{ width: '100%', height: 44, background: 'transparent', color: '#E24B4A', border: '0.5px solid #E24B4A', borderRadius: 12, fontSize: 13, fontWeight: 500, fontFamily: 'Outfit, sans-serif', cursor: 'pointer' }}>
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ══ ADD COLOR POPUP ════════════════════════════════ */}
+      {showAddColor && (
+        <>
+          <div onClick={() => setShowAddColor(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40 }} />
+          <div style={{ position: 'fixed', top: '5%', left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: 390, background: 'white', borderRadius: 20, padding: '1.25rem 1.5rem 1.5rem', zIndex: 50, boxShadow: '0 4px 24px rgba(0,0,0,0.2)', maxHeight: '85vh', overflowY: 'auto' }}>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <p style={{ fontSize: 16, fontWeight: 500, color: '#1a1a2e', margin: 0 }}>Add polish color</p>
+              <button onClick={() => { setShowAddColor(false); setSuggestions([]) }}
+                style={{ width: 28, height: 28, borderRadius: '50%', background: '#f0f0f0', border: 'none', cursor: 'pointer', fontSize: 14 }}>✕</button>
+            </div>
+
+            <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#a0a0b0', display: 'block', marginBottom: 5 }}>Color name</label>
+            <div style={{ position: 'relative', marginBottom: 12 }}>
+              <input placeholder="e.g. Lavender Dusk" value={newName} onChange={e => onColorNameInput(e.target.value)}
+                style={{ width: '100%', height: 44, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 14px', fontSize: 15, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif' }} />
+              {suggestions.length > 0 && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '0.5px solid #ddd', borderRadius: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, overflow: 'hidden' }}>
+                  {suggestions.map(s => (
+                    <button key={s.id} onClick={() => { setNewName(s.name); setNewBrand(s.brand); setNewHex(s.hex); setNewType(s.type); setNewCode(s.code); setSuggestions([]) }}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' as const }}>
+                      <div style={{ width: 24, height: 30, borderRadius: 4, background: s.hex, flexShrink: 0 }} />
+                      <div>
+                        <p style={{ fontSize: 12, fontWeight: 500, color: '#1a1a2e', margin: 0 }}>{s.name}</p>
+                        <p style={{ fontSize: 10, color: '#6b6b80', margin: 0 }}>{s.brand}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#a0a0b0', display: 'block', marginBottom: 5 }}>Brand</label>
+            <select value={newBrand} onChange={e => setNewBrand(e.target.value)}
+              style={{ width: '100%', height: 44, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 14px', fontSize: 15, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif', background: 'white', marginBottom: 12 }}>
+              {BRANDS.map(b => <option key={b}>{b}</option>)}
+            </select>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#a0a0b0', display: 'block', marginBottom: 5 }}>Type</label>
+                <select value={newType} onChange={e => setNewType(e.target.value as 'Gel' | 'Regular' | 'SNS')}
+                  style={{ width: '100%', height: 44, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 10px', fontSize: 14, outline: 'none', fontFamily: 'Outfit, sans-serif', background: 'white', boxSizing: 'border-box' as const }}>
+                  <option>Gel</option>
+                  <option>Regular</option>
+                  <option>SNS</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#a0a0b0', display: 'block', marginBottom: 5 }}>Color</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 10px', boxSizing: 'border-box' as const }}>
+                  <input type="color" value={newHex} onChange={e => setNewHex(e.target.value)}
+                    style={{ width: 30, height: 30, border: 'none', borderRadius: 6, cursor: 'pointer', padding: 0, flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: '#6b6b80' }}>{newHex}</span>
+                </div>
+              </div>
+            </div>
+
+            <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#a0a0b0', display: 'block', marginBottom: 5 }}>Product code (optional)</label>
+            <input placeholder="e.g. GC H008" value={newCode} onChange={e => setNewCode(e.target.value)}
+              style={{ width: '100%', height: 44, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 14px', fontSize: 15, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif', marginBottom: 16 }} />
+
+            <button onClick={addColor}
+              style={{ width: '100%', height: 50, background: '#C4546A', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 500, fontFamily: 'Outfit, sans-serif', cursor: 'pointer' }}>
+              Add to inventory ✦
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Bottom nav */}
+      <nav style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 68, background: 'white', borderTop: '0.5px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '0 8px 6px' }}>
+        {[
+          { icon: '📊', label: 'analytics', tab: 'analytics' },
+          { icon: '🏪', label: 'salon',     tab: 'salon' },
+          { icon: '💅', label: 'inventory', tab: 'inventory' },
+          { icon: '👤', label: 'profile',   tab: 'profile' },
+        ].map(n => (
+          <button key={n.tab} onClick={() => setActiveTab(n.tab as typeof activeTab)}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1, background: 'none', border: 'none', cursor: 'pointer', color: activeTab === n.tab ? '#C4546A' : '#a0a0b0', fontFamily: 'Outfit, sans-serif' }}>
+            <span style={{ fontSize: 20 }}>{n.icon}</span>
+            <span style={{ fontSize: 9 }}>{n.label}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
+  )
+}
