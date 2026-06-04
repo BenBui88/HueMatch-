@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import OwnerScreen from './pages/OwnerScreen'
 
 export type UserRole = 'client' | 'tech' | 'owner' | null
 let globalRole: UserRole = null
@@ -35,7 +36,8 @@ function LandingPage() {
     setRole(selected ?? 'client')
     setUserName(name || email.split('@')[0] || 'User')
     setShowForm(false)
-    navigate('/match')
+    if (selected === 'owner') navigate('/owner')
+    else navigate('/match')
   }
 
   const handleRoleSelect = (role: UserRole) => {
@@ -46,12 +48,10 @@ function LandingPage() {
   return (
     <div style={{ fontFamily: 'Outfit, sans-serif', display: 'flex', flexDirection: 'column', minHeight: '100%', padding: '1.5rem', position: 'relative' }}>
 
-      {/* Logo */}
       <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
         <img src="/logo.png" alt="HueMatch" style={{ width: 200, height: 200, objectFit: 'contain', margin: '0 auto 0.5rem', display: 'block' }} />
       </div>
 
-      {/* Benefits */}
       <div style={{ background: '#f8f7f9', borderRadius: 12, padding: '1rem', marginBottom: '1.5rem', border: '0.5px solid #eee' }}>
         {[
           { icon: '💅', text: 'AI matches shades to your outfit + skin tone' },
@@ -65,12 +65,11 @@ function LandingPage() {
         ))}
       </div>
 
-      {/* Role selector */}
       <p style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.1em', color: '#a0a0b0', marginBottom: 12 }}>I am a...</p>
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
         {[
-          { role: 'client' as UserRole, icon: '👤', title: 'Client', sub: 'Find colors, book techs, earn points' },
-          { role: 'tech' as UserRole, icon: '⭐', title: 'Nail tech', sub: 'Manage your portable profile' },
+          { role: 'client' as UserRole, icon: '👤', title: 'Client',      sub: 'Find colors, book techs, earn points' },
+          { role: 'tech'  as UserRole, icon: '⭐', title: 'Nail tech',   sub: 'Manage your portable profile' },
           { role: 'owner' as UserRole, icon: '🏪', title: 'Salon owner', sub: 'Analytics and team management' },
         ].map(r => (
           <button key={String(r.role)} onClick={() => handleRoleSelect(r.role)}
@@ -84,32 +83,13 @@ function LandingPage() {
         ))}
       </div>
 
-      {/* Popup form — slides up above keyboard */}
+      {/* Popup form */}
       {showForm && (
         <>
-          {/* Dark overlay behind popup */}
-          <div
-            onClick={() => setShowForm(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40 }}
-          />
+          <div onClick={() => setShowForm(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40 }} />
+          <div style={{ position: 'fixed', top: '5%', left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: 390, background: 'white', borderRadius: 20, padding: '1.25rem 1.5rem 1.5rem', zIndex: 50, boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
 
-          {/* Popup card — fixed above keyboard */}
-          <div style={{
-            position: 'fixed',
-           top: '5%',
-left: '50%',
-transform: 'translateX(-50%)',
-width: '90%',
-maxWidth: 390,
-background: 'white',
-borderRadius: '20px',
-padding: '1.25rem 1.5rem 1.5rem',
-zIndex: 50,
-boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
-          }}>
-           
-
-            {/* Title */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div>
                 <p style={{ fontSize: 16, fontWeight: 500, color: '#1a1a2e', margin: 0 }}>
@@ -118,31 +98,18 @@ boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
                 <p style={{ fontSize: 12, color: '#a0a0b0', margin: '3px 0 0' }}>Enter your details to get started</p>
               </div>
               <button onClick={() => setShowForm(false)}
-                style={{ width: 28, height: 28, borderRadius: '50%', background: '#f0f0f0', border: 'none', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                style={{ width: 28, height: 28, borderRadius: '50%', background: '#f0f0f0', border: 'none', cursor: 'pointer', fontSize: 14 }}>✕</button>
             </div>
 
-            {/* Name input */}
             <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#a0a0b0', display: 'block', marginBottom: 5 }}>Your name</label>
-            <input
-              autoFocus
-              placeholder="e.g. Taylor"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              style={{ width: '100%', height: 46, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 14px', fontSize: 16, marginBottom: 12, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif', color: '#1a1a2e' }}
-            />
+            <input autoFocus placeholder="e.g. Taylor" value={name} onChange={e => setName(e.target.value)}
+              style={{ width: '100%', height: 46, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 14px', fontSize: 16, marginBottom: 12, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif', color: '#1a1a2e' }} />
 
-            {/* Email input */}
             <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#a0a0b0', display: 'block', marginBottom: 5 }}>Email address</label>
-            <input
-              type="email"
-              placeholder="you@email.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+            <input type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && signIn()}
-              style={{ width: '100%', height: 46, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 14px', fontSize: 16, marginBottom: 16, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif', color: '#1a1a2e' }}
-            />
+              style={{ width: '100%', height: 46, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 14px', fontSize: 16, marginBottom: 16, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif', color: '#1a1a2e' }} />
 
-            {/* Sign in button */}
             <button onClick={signIn}
               style={{ width: '100%', height: 50, background: '#C4546A', color: 'white', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 500, fontFamily: 'Outfit, sans-serif', cursor: 'pointer' }}>
               Get started ✦
@@ -171,30 +138,30 @@ function MatchScreen() {
 
   const SKIN_TONES = [
     { hex: '#FDDBB4', name: 'Fair porcelain', ut: 'cool' },
-    { hex: '#F5C99A', name: 'Light ivory', ut: 'neutral' },
-    { hex: '#EAB98A', name: 'Light beige', ut: 'warm' },
-    { hex: '#D4956A', name: 'Medium beige', ut: 'warm' },
-    { hex: '#C07B4F', name: 'Medium tan', ut: 'warm' },
-    { hex: '#A0622E', name: 'Medium brown', ut: 'warm' },
-    { hex: '#8B4513', name: 'Caramel brown', ut: 'warm' },
-    { hex: '#6B3A2A', name: 'Deep brown', ut: 'neutral' },
-    { hex: '#4A2015', name: 'Deep espresso', ut: 'cool' },
-    { hex: '#2D0D00', name: 'Deep ebony', ut: 'cool' },
+    { hex: '#F5C99A', name: 'Light ivory',    ut: 'neutral' },
+    { hex: '#EAB98A', name: 'Light beige',    ut: 'warm' },
+    { hex: '#D4956A', name: 'Medium beige',   ut: 'warm' },
+    { hex: '#C07B4F', name: 'Medium tan',     ut: 'warm' },
+    { hex: '#A0622E', name: 'Medium brown',   ut: 'warm' },
+    { hex: '#8B4513', name: 'Caramel brown',  ut: 'warm' },
+    { hex: '#6B3A2A', name: 'Deep brown',     ut: 'neutral' },
+    { hex: '#4A2015', name: 'Deep espresso',  ut: 'cool' },
+    { hex: '#2D0D00', name: 'Deep ebony',     ut: 'cool' },
   ]
 
   const FALLBACK = [
-    { name: 'Lavender Dusk', brand: 'OPI GelColor', hex: '#9B7DB8', match: 97, reason: 'Analogous purple harmonizes beautifully.' },
-    { name: 'Berry Whisper', brand: 'Gelish', hex: '#8B5B8E', match: 93, reason: 'Deeper tone extends the palette.' },
-    { name: 'Plum Poetry', brand: 'CND Shellac', hex: '#6E4A7A', match: 89, reason: 'Jewel tone adds depth.' },
-    { name: 'Mauve Mist', brand: 'Entity', hex: '#B89AB8', match: 85, reason: 'Dusty, tonal and elegant.' },
-    { name: 'Lilac Dream', brand: 'IBD', hex: '#C2A8D4', match: 80, reason: 'Lighter tint, airy coordination.' },
-    { name: 'Orchid Haze', brand: 'Orly', hex: '#B090C0', match: 75, reason: 'Neutral purple bridge.' },
+    { name: 'Lavender Dusk',  brand: 'OPI GelColor', hex: '#9B7DB8', match: 97, reason: 'Analogous purple harmonizes beautifully.' },
+    { name: 'Berry Whisper',  brand: 'Gelish',        hex: '#8B5B8E', match: 93, reason: 'Deeper tone extends the palette.' },
+    { name: 'Plum Poetry',    brand: 'CND Shellac',   hex: '#6E4A7A', match: 89, reason: 'Jewel tone adds depth.' },
+    { name: 'Mauve Mist',     brand: 'Entity',        hex: '#B89AB8', match: 85, reason: 'Dusty, tonal and elegant.' },
+    { name: 'Lilac Dream',    brand: 'IBD',           hex: '#C2A8D4', match: 80, reason: 'Lighter tint, airy coordination.' },
+    { name: 'Orchid Haze',    brand: 'Orly',          hex: '#B090C0', match: 75, reason: 'Neutral purple bridge.' },
   ]
 
   const SALONS = [
-    { name: 'Luxe Nail Bar', emoji: '💅', avail: '6 matches', dist: '0.3 mi', bColor: '#D4145A' },
+    { name: 'Luxe Nail Bar',   emoji: '💅', avail: '6 matches', dist: '0.3 mi', bColor: '#D4145A' },
     { name: 'The Nail Studio', emoji: '✨', avail: '4 matches', dist: '0.7 mi', bColor: null },
-    { name: 'Pink & Polish', emoji: '🌸', avail: '5 matches', dist: '1.2 mi', bColor: '#2D5BE3' },
+    { name: 'Pink & Polish',   emoji: '🌸', avail: '5 matches', dist: '1.2 mi', bColor: '#2D5BE3' },
   ]
 
   const extractColor = (file: File, cb: (hex: string) => void) => {
@@ -207,9 +174,9 @@ function MatchScreen() {
       ctx.drawImage(img, 0, 0, 50, 50)
       const d = ctx.getImageData(0, 0, 50, 50).data
       let r = 0, g = 0, b = 0, cnt = 0
-      for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; cnt++ }
-      r = Math.round(r / cnt); g = Math.round(g / cnt); b = Math.round(b / cnt)
-      cb('#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join(''))
+      for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i+1]; b += d[i+2]; cnt++ }
+      r = Math.round(r/cnt); g = Math.round(g/cnt); b = Math.round(b/cnt)
+      cb('#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join(''))
       URL.revokeObjectURL(url)
     }
     img.src = url
@@ -218,22 +185,14 @@ function MatchScreen() {
   const handleOutfitFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const preview = URL.createObjectURL(file)
-    setOutfitPreview(preview)
-    extractColor(file, hex => {
-      setOutfitHexState(hex); setOutfitHex(hex); setOutfitSet(true)
-    })
+    setOutfitPreview(URL.createObjectURL(file))
+    extractColor(file, hex => { setOutfitHexState(hex); setOutfitHex(hex); setOutfitSet(true) })
   }
 
   const handleSkinFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    extractColor(file, hex => {
-      setSkinHexState(hex)
-      setSkinNameState('Scanned skin tone')
-      setUndertoneState('neutral')
-      setSkin(hex, 'Scanned skin tone', 'neutral')
-    })
+    extractColor(file, hex => { setSkinHexState(hex); setSkinNameState('Scanned skin tone'); setUndertoneState('neutral'); setSkin(hex, 'Scanned skin tone', 'neutral') })
   }
 
   const selectSkin = (t: typeof SKIN_TONES[0]) => {
@@ -251,18 +210,18 @@ function MatchScreen() {
 
   const runMatch = async () => {
     setResults(null); setLoading(true); let i = 0
-    const iv = setInterval(() => { setThinking(steps[Math.min(i++, steps.length - 1)]) }, 700)
+    const iv = setInterval(() => { setThinking(steps[Math.min(i++, steps.length-1)]) }, 700)
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514', max_tokens: 1200,
-          messages: [{ role: 'user', content: `Nail colorist. Outfit:${outfitHex}. Skin:${skinName || 'medium'} (${undertone}, ${skinHex || '#D4956A'}). Type:${nailType}. Return ONLY JSON array of 6: [{"name":"","brand":"","hex":"#xxxxxx","match":95,"reason":""}]. Real brands. Sort by match desc.` }]
+          messages: [{ role: 'user', content: `Nail colorist. Outfit:${outfitHex}. Skin:${skinName||'medium'} (${undertone}, ${skinHex||'#D4956A'}). Type:${nailType}. Return ONLY JSON array of 6: [{"name":"","brand":"","hex":"#xxxxxx","match":95,"reason":""}]. Real brands. Sort by match desc.` }]
         })
       })
       const data = await res.json()
-      setResults(JSON.parse(data.content[0].text.trim().replace(/```json|```/g, '')))
+      setResults(JSON.parse(data.content[0].text.trim().replace(/```json|```/g,'')))
     } catch { setResults(FALLBACK) }
     finally { clearInterval(iv); setLoading(false) }
   }
@@ -326,7 +285,7 @@ function MatchScreen() {
                   <p style={{ fontSize: 10, fontWeight: 500, color: '#1a1a2e', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{skinName}</p>
                   <p style={{ fontSize: 9, color: '#a0a0b0', margin: 0 }}>{undertone}</p>
                 </div>
-                <button onClick={() => { setSkinHexState(''); setSkinNameState(''); setSkin('', '', '') }}
+                <button onClick={() => { setSkinHexState(''); setSkinNameState(''); setSkin('','','') }}
                   style={{ fontSize: 9, color: '#C4546A', border: 'none', background: 'none', cursor: 'pointer', flexShrink: 0 }}>✕</button>
               </div>
             )}
@@ -342,7 +301,7 @@ function MatchScreen() {
       </div>
 
       <div style={{ display: 'flex', gap: 6, padding: '0 18px', marginBottom: 12 }}>
-        {(['Gel', 'Regular', 'SNS'] as const).map(t => (
+        {(['Gel','Regular','SNS'] as const).map(t => (
           <button key={t} onClick={() => { setNailTypeState(t); setNailType(t) }}
             style={{ flex: 1, height: 34, borderRadius: 8, border: nailType === t ? '1.5px solid #C4546A' : '0.5px solid #ddd', background: nailType === t ? '#FDF0F2' : 'transparent', color: nailType === t ? '#C4546A' : '#6b6b80', fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
             {t === 'SNS' ? 'SNS / Dip' : t}
@@ -383,7 +342,7 @@ function MatchScreen() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, padding: '0 18px', marginBottom: 16 }}>
             {results.map((c, i) => (
-              <div key={c.hex + i} style={{ background: 'white', borderRadius: 12, border: i < 2 ? '1.5px solid #C4546A' : '0.5px solid #eee', overflow: 'hidden' }}>
+              <div key={c.hex+i} style={{ background: 'white', borderRadius: 12, border: i < 2 ? '1.5px solid #C4546A' : '0.5px solid #eee', overflow: 'hidden' }}>
                 <div style={{ height: 64, background: c.hex, position: 'relative' }}>
                   {skinHex && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: skinHex }} />}
                 </div>
@@ -415,10 +374,10 @@ function MatchScreen() {
 
       <nav style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 68, background: 'white', borderTop: '0.5px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '0 8px 6px' }}>
         {[
-          { icon: '✦', label: 'match', active: true },
-          { icon: '🗺️', label: 'discover', active: false },
+          { icon: '✦',  label: 'match',     active: true },
+          { icon: '🗺️', label: 'discover',  active: false },
           { icon: '👥', label: 'community', active: false },
-          { icon: '👤', label: 'profile', active: false },
+          { icon: '👤', label: 'profile',   active: false },
         ].map(n => (
           <button key={n.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1, background: 'none', border: 'none', cursor: 'pointer', color: n.active ? '#C4546A' : '#a0a0b0', fontFamily: 'Outfit, sans-serif' }}>
             <span style={{ fontSize: 20 }}>{n.icon}</span>
@@ -435,9 +394,10 @@ const queryClient = new QueryClient()
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
+      <Route path="/"      element={<LandingPage />} />
       <Route path="/match" element={<MatchScreen />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/owner" element={<OwnerScreen />} />
+      <Route path="*"      element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
