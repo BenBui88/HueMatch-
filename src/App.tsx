@@ -75,10 +75,18 @@ function LandingPage() {
 
       {selected && (
         <div style={{ marginBottom: '1rem' }}>
-          <input placeholder="Your name" value={name} onChange={e => setName(e.target.value)}
-            style={{ width: '100%', height: 40, border: '0.5px solid #ddd', borderRadius: 8, padding: '0 12px', fontSize: 13, marginBottom: 8, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif' }} />
-          <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
-            style={{ width: '100%', height: 40, border: '0.5px solid #ddd', borderRadius: 8, padding: '0 12px', fontSize: 13, marginBottom: 8, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif' }} />
+       <input 
+  placeholder="Your name" 
+  value={name} 
+  onChange={e => setName(e.target.value)}
+  onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+  style={{ width: '100%', height: 40, border: '0.5px solid #ddd', borderRadius: 8, padding: '0 12px', fontSize: 16, marginBottom: 8, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif' }} />
+<input 
+  placeholder="Email" 
+  value={email} 
+  onChange={e => setEmail(e.target.value)}
+  onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+  style={{ width: '100%', height: 40, border: '0.5px solid #ddd', borderRadius: 8, padding: '0 12px', fontSize: 16, marginBottom: 8, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif' }} />
         </div>
       )}
 
