@@ -96,16 +96,16 @@ function LandingPage() {
           {/* Popup card — fixed above keyboard */}
           <div style={{
             position: 'fixed',
-            bottom: 0,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '100%',
-            maxWidth: 390,
-            background: 'white',
-            borderRadius: '20px 20px 0 0',
-            padding: '1.25rem 1.5rem 2rem',
-            zIndex: 50,
-            boxShadow: '0 -4px 24px rgba(0,0,0,0.15)',
+           top: '5%',
+left: '50%',
+transform: 'translateX(-50%)',
+width: '90%',
+maxWidth: 390,
+background: 'white',
+borderRadius: '20px',
+padding: '1.25rem 1.5rem 1.5rem',
+zIndex: 50,
+boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
           }}>
             {/* Handle bar */}
             <div style={{ width: 36, height: 4, borderRadius: 2, background: '#ddd', margin: '0 auto 1rem' }} />
