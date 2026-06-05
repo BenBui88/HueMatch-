@@ -33,14 +33,13 @@ function LandingPage() {
   const [email, setEmail] = useState('')
   const [showForm, setShowForm] = useState(false)
 
- const signIn = () => {
+  const signIn = () => {
     setRole(selected ?? 'client')
     setUserName(name || email.split('@')[0] || 'User')
     setShowForm(false)
     if (selected === 'owner') navigate('/owner')
     else if (selected === 'client') navigate('/home')
     else navigate('/match')
-  }
   }
 
   const handleRoleSelect = (role: UserRole) => {
@@ -86,13 +85,11 @@ function LandingPage() {
         ))}
       </div>
 
-      {/* Popup form */}
       {showForm && (
         <>
           <div onClick={() => setShowForm(false)}
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40 }} />
           <div style={{ position: 'fixed', top: '5%', left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: 390, background: 'white', borderRadius: 20, padding: '1.25rem 1.5rem 1.5rem', zIndex: 50, boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
-
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div>
                 <p style={{ fontSize: 16, fontWeight: 500, color: '#1a1a2e', margin: 0 }}>
@@ -137,33 +134,33 @@ function MatchScreen() {
   const [results, setResults] = useState<{ name: string; brand: string; hex: string; match: number; reason: string }[] | null>(null)
 
   const outfitInputRef = useRef<HTMLInputElement>(null)
-  const skinInputRef = useRef<HTMLInputElement>(null)
+  const skinInputRef   = useRef<HTMLInputElement>(null)
 
   const SKIN_TONES = [
-    { hex: '#FDDBB4', name: 'Fair porcelain', ut: 'cool' },
+    { hex: '#FDDBB4', name: 'Fair porcelain', ut: 'cool'    },
     { hex: '#F5C99A', name: 'Light ivory',    ut: 'neutral' },
-    { hex: '#EAB98A', name: 'Light beige',    ut: 'warm' },
-    { hex: '#D4956A', name: 'Medium beige',   ut: 'warm' },
-    { hex: '#C07B4F', name: 'Medium tan',     ut: 'warm' },
-    { hex: '#A0622E', name: 'Medium brown',   ut: 'warm' },
-    { hex: '#8B4513', name: 'Caramel brown',  ut: 'warm' },
+    { hex: '#EAB98A', name: 'Light beige',    ut: 'warm'    },
+    { hex: '#D4956A', name: 'Medium beige',   ut: 'warm'    },
+    { hex: '#C07B4F', name: 'Medium tan',     ut: 'warm'    },
+    { hex: '#A0622E', name: 'Medium brown',   ut: 'warm'    },
+    { hex: '#8B4513', name: 'Caramel brown',  ut: 'warm'    },
     { hex: '#6B3A2A', name: 'Deep brown',     ut: 'neutral' },
-    { hex: '#4A2015', name: 'Deep espresso',  ut: 'cool' },
-    { hex: '#2D0D00', name: 'Deep ebony',     ut: 'cool' },
+    { hex: '#4A2015', name: 'Deep espresso',  ut: 'cool'    },
+    { hex: '#2D0D00', name: 'Deep ebony',     ut: 'cool'    },
   ]
 
   const FALLBACK = [
     { name: 'Lavender Dusk',  brand: 'OPI GelColor', hex: '#9B7DB8', match: 97, reason: 'Analogous purple harmonizes beautifully.' },
-    { name: 'Berry Whisper',  brand: 'Gelish',        hex: '#8B5B8E', match: 93, reason: 'Deeper tone extends the palette.' },
-    { name: 'Plum Poetry',    brand: 'CND Shellac',   hex: '#6E4A7A', match: 89, reason: 'Jewel tone adds depth.' },
-    { name: 'Mauve Mist',     brand: 'Entity',        hex: '#B89AB8', match: 85, reason: 'Dusty, tonal and elegant.' },
-    { name: 'Lilac Dream',    brand: 'IBD',           hex: '#C2A8D4', match: 80, reason: 'Lighter tint, airy coordination.' },
-    { name: 'Orchid Haze',    brand: 'Orly',          hex: '#B090C0', match: 75, reason: 'Neutral purple bridge.' },
+    { name: 'Berry Whisper',  brand: 'Gelish',        hex: '#8B5B8E', match: 93, reason: 'Deeper tone extends the palette.'         },
+    { name: 'Plum Poetry',    brand: 'CND Shellac',   hex: '#6E4A7A', match: 89, reason: 'Jewel tone adds depth.'                   },
+    { name: 'Mauve Mist',     brand: 'Entity',        hex: '#B89AB8', match: 85, reason: 'Dusty, tonal and elegant.'                },
+    { name: 'Lilac Dream',    brand: 'IBD',           hex: '#C2A8D4', match: 80, reason: 'Lighter tint, airy coordination.'         },
+    { name: 'Orchid Haze',    brand: 'Orly',          hex: '#B090C0', match: 75, reason: 'Neutral purple bridge.'                   },
   ]
 
   const SALONS = [
     { name: 'Luxe Nail Bar',   emoji: '💅', avail: '6 matches', dist: '0.3 mi', bColor: '#D4145A' },
-    { name: 'The Nail Studio', emoji: '✨', avail: '4 matches', dist: '0.7 mi', bColor: null },
+    { name: 'The Nail Studio', emoji: '✨', avail: '4 matches', dist: '0.7 mi', bColor: null      },
     { name: 'Pink & Polish',   emoji: '🌸', avail: '5 matches', dist: '1.2 mi', bColor: '#2D5BE3' },
   ]
 
@@ -186,15 +183,13 @@ function MatchScreen() {
   }
 
   const handleOutfitFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0]; if (!file) return
     setOutfitPreview(URL.createObjectURL(file))
     extractColor(file, hex => { setOutfitHexState(hex); setOutfitHex(hex); setOutfitSet(true) })
   }
 
   const handleSkinFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0]; if (!file) return
     extractColor(file, hex => { setSkinHexState(hex); setSkinNameState('Scanned skin tone'); setUndertoneState('neutral'); setSkin(hex, 'Scanned skin tone', 'neutral') })
   }
 
@@ -233,7 +228,7 @@ function MatchScreen() {
     <div style={{ fontFamily: 'Outfit, sans-serif', display: 'flex', flexDirection: 'column', minHeight: '100%', paddingBottom: 80 }}>
 
       <input ref={outfitInputRef} type="file" accept="image/*" onChange={handleOutfitFile} style={{ display: 'none' }} />
-      <input ref={skinInputRef} type="file" accept="image/*" capture="user" onChange={handleSkinFile} style={{ display: 'none' }} />
+      <input ref={skinInputRef}   type="file" accept="image/*" capture="user" onChange={handleSkinFile} style={{ display: 'none' }} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 20px 4px', fontSize: 11, fontWeight: 500 }}>
         <span>9:41</span><span>●●●</span>
@@ -377,7 +372,7 @@ function MatchScreen() {
 
       <nav style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 68, background: 'white', borderTop: '0.5px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '0 8px 6px' }}>
         {[
-          { icon: '✦',  label: 'match',     active: true },
+          { icon: '✦',  label: 'match',     active: true  },
           { icon: '🗺️', label: 'discover',  active: false },
           { icon: '👥', label: 'community', active: false },
           { icon: '👤', label: 'profile',   active: false },
