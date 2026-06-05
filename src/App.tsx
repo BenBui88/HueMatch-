@@ -33,12 +33,14 @@ function LandingPage() {
   const [email, setEmail] = useState('')
   const [showForm, setShowForm] = useState(false)
 
-  const signIn = () => {
+ const signIn = () => {
     setRole(selected ?? 'client')
     setUserName(name || email.split('@')[0] || 'User')
     setShowForm(false)
     if (selected === 'owner') navigate('/owner')
+    else if (selected === 'client') navigate('/home')
     else navigate('/match')
+  }
   }
 
   const handleRoleSelect = (role: UserRole) => {
@@ -399,6 +401,7 @@ function AppRoutes() {
       <Route path="/match" element={<MatchScreen />} />
       <Route path="/owner" element={<OwnerScreen />} />
       <Route path="*"      element={<Navigate to="/" replace />} />
+   <Route path="/home" element={<ClientHome />} />
     </Routes>
   )
 }
