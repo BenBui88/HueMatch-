@@ -34,7 +34,7 @@ function LandingPage() {
   const [email, setEmail] = useState('')
   const [showForm, setShowForm] = useState(false)
 
- const signIn = () => {
+  const signIn = () => {
     setRole(selected ?? 'client')
     setUserName(name || email.split('@')[0] || 'User')
     setShowForm(false)
@@ -43,7 +43,6 @@ function LandingPage() {
     else if (selected === 'tech') navigate('/tech')
     else navigate('/match')
   }
-}
 
   const handleRoleSelect = (role: UserRole) => {
     setSelected(role)
@@ -231,7 +230,7 @@ function MatchScreen() {
     <div style={{ fontFamily: 'Outfit, sans-serif', display: 'flex', flexDirection: 'column', minHeight: '100%', paddingBottom: 80 }}>
 
       <input ref={outfitInputRef} type="file" accept="image/*" onChange={handleOutfitFile} style={{ display: 'none' }} />
-      <input ref={skinInputRef}   type="file" accept="image/*" capture="user" onChange={handleSkinFile} style={{ display: 'none' }} />
+      <input ref={skinInputRef} type="file" accept="image/*" capture="user" onChange={handleSkinFile} style={{ display: 'none' }} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 20px 4px', fontSize: 11, fontWeight: 500 }}>
         <span>9:41</span><span>●●●</span>
@@ -397,9 +396,9 @@ function AppRoutes() {
     <Routes>
       <Route path="/"      element={<LandingPage />} />
       <Route path="/home"  element={<ClientHome />} />
+      <Route path="/tech"  element={<TechHome />} />
       <Route path="/match" element={<MatchScreen />} />
       <Route path="/owner" element={<OwnerScreen />} />
-      <Route path="/tech" element={<TechHome />} />
       <Route path="*"      element={<Navigate to="/" replace />} />
     </Routes>
   )
