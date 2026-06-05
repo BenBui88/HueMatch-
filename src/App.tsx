@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import OwnerScreen from './pages/OwnerScreen'
 import ClientHome from './pages/ClientHome'
+import TechHome from './pages/TechHome'
 
 export type UserRole = 'client' | 'tech' | 'owner' | null
 let globalRole: UserRole = null
@@ -33,14 +34,16 @@ function LandingPage() {
   const [email, setEmail] = useState('')
   const [showForm, setShowForm] = useState(false)
 
-  const signIn = () => {
+ const signIn = () => {
     setRole(selected ?? 'client')
     setUserName(name || email.split('@')[0] || 'User')
     setShowForm(false)
     if (selected === 'owner') navigate('/owner')
     else if (selected === 'client') navigate('/home')
+    else if (selected === 'tech') navigate('/tech')
     else navigate('/match')
   }
+}
 
   const handleRoleSelect = (role: UserRole) => {
     setSelected(role)
@@ -396,6 +399,7 @@ function AppRoutes() {
       <Route path="/home"  element={<ClientHome />} />
       <Route path="/match" element={<MatchScreen />} />
       <Route path="/owner" element={<OwnerScreen />} />
+      <Route path="/tech" element={<TechHome />} />
       <Route path="*"      element={<Navigate to="/" replace />} />
     </Routes>
   )
