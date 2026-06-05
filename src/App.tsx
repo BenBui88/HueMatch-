@@ -398,10 +398,10 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/"      element={<LandingPage />} />
+      <Route path="/home"  element={<ClientHome />} />
       <Route path="/match" element={<MatchScreen />} />
       <Route path="/owner" element={<OwnerScreen />} />
       <Route path="*"      element={<Navigate to="/" replace />} />
-   <Route path="/home" element={<ClientHome />} />
     </Routes>
   )
 }
