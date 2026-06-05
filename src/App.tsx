@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import OwnerScreen from './pages/OwnerScreen'
+import ClientHome from './pages/ClientHome'
 
 export type UserRole = 'client' | 'tech' | 'owner' | null
 let globalRole: UserRole = null
