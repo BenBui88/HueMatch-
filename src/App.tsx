@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { supabase } from './lib/supabase'
 import OwnerScreen from './pages/OwnerScreen'
 import ClientHome from './pages/ClientHome'
 import TechHome from './pages/TechHome'
@@ -29,24 +30,58 @@ export const setNailType = (t: 'Gel' | 'Regular' | 'SNS') => { globalNailType = 
 
 function LandingPage() {
   const navigate = useNavigate()
-  const [selected, setSelected] = useState<UserRole>(null)
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [showForm, setShowForm] = useState(false)
-
-  const signIn = () => {
-    setRole(selected ?? 'client')
-    setUserName(name || email.split('@')[0] || 'User')
-    setShowForm(false)
-    if (selected === 'owner') navigate('/owner')
-    else if (selected === 'client') navigate('/home')
-    else if (selected === 'tech') navigate('/tech')
-    else navigate('/match')
-  }
+  const [selected, setSelected]   = useState<UserRole>(null)
+  const [name, setName]           = useState('')
+  const [email, setEmail]         = useState('')
+  const [password, setPassword]   = useState('')
+  const [isSignUp, setIsSignUp]   = useState(false)
+  const [showForm, setShowForm]   = useState(false)
+  const [loading, setLoading]     = useState(false)
+  const [error, setError]         = useState('')
 
   const handleRoleSelect = (role: UserRole) => {
     setSelected(role)
     setShowForm(true)
+    setError('')
+  }
+
+  const signIn = async () => {
+    if (!email || !password) { setError('Please enter your email and password'); return }
+    setLoading(true)
+    setError('')
+
+    try {
+      if (selected === 'owner') {
+        // Real Supabase auth for owners
+        if (isSignUp) {
+          const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+          if (signUpError) { setError(signUpError.message); setLoading(false); return }
+          setRole('owner')
+          setUserName(name || email.split('@')[0])
+          setShowForm(false)
+          navigate('/owner')
+        } else {
+          const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+          if (signInError) { setError('Invalid email or password. Try again or sign up.'); setLoading(false); return }
+          setRole('owner')
+          setUserName(name || email.split('@')[0])
+          setShowForm(false)
+          navigate('/owner')
+        }
+      } else {
+        // Simple auth for clients and techs (will add real auth later)
+        setRole(selected ?? 'client')
+        setUserName(name || email.split('@')[0] || 'User')
+        setShowForm(false)
+        if (selected === 'client') navigate('/home')
+        else if (selected === 'tech') navigate('/tech')
+        else navigate('/match')
+      }
+    } catch (e) {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -87,35 +122,71 @@ function LandingPage() {
         ))}
       </div>
 
+      {/* Auth popup */}
       {showForm && (
         <>
-          <div onClick={() => setShowForm(false)}
+          <div onClick={() => { setShowForm(false); setError('') }}
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40 }} />
           <div style={{ position: 'fixed', top: '5%', left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: 390, background: 'white', borderRadius: 20, padding: '1.25rem 1.5rem 1.5rem', zIndex: 50, boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
+
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div>
                 <p style={{ fontSize: 16, fontWeight: 500, color: '#1a1a2e', margin: 0 }}>
                   {selected === 'client' ? '👤 Client' : selected === 'tech' ? '⭐ Nail tech' : '🏪 Salon owner'}
                 </p>
-                <p style={{ fontSize: 12, color: '#a0a0b0', margin: '3px 0 0' }}>Enter your details to get started</p>
+                <p style={{ fontSize: 12, color: '#a0a0b0', margin: '3px 0 0' }}>
+                  {selected === 'owner' ? (isSignUp ? 'Create your salon account' : 'Sign in to your salon') : 'Enter your details to get started'}
+                </p>
               </div>
-              <button onClick={() => setShowForm(false)}
+              <button onClick={() => { setShowForm(false); setError('') }}
                 style={{ width: 28, height: 28, borderRadius: '50%', background: '#f0f0f0', border: 'none', cursor: 'pointer', fontSize: 14 }}>✕</button>
             </div>
 
-            <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#a0a0b0', display: 'block', marginBottom: 5 }}>Your name</label>
-            <input autoFocus placeholder="e.g. Taylor" value={name} onChange={e => setName(e.target.value)}
-              style={{ width: '100%', height: 46, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 14px', fontSize: 16, marginBottom: 12, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif', color: '#1a1a2e' }} />
+            {/* Name field — signup only */}
+            {(selected !== 'owner' || isSignUp) && (
+              <>
+                <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#a0a0b0', display: 'block', marginBottom: 5 }}>Your name</label>
+                <input autoFocus placeholder="e.g. Taylor" value={name} onChange={e => setName(e.target.value)}
+                  style={{ width: '100%', height: 46, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 14px', fontSize: 16, marginBottom: 12, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif', color: '#1a1a2e' }} />
+              </>
+            )}
 
             <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#a0a0b0', display: 'block', marginBottom: 5 }}>Email address</label>
             <input type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && signIn()}
-              style={{ width: '100%', height: 46, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 14px', fontSize: 16, marginBottom: 16, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif', color: '#1a1a2e' }} />
+              style={{ width: '100%', height: 46, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 14px', fontSize: 16, marginBottom: 12, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif', color: '#1a1a2e' }} />
 
-            <button onClick={signIn}
-              style={{ width: '100%', height: 50, background: '#C4546A', color: 'white', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 500, fontFamily: 'Outfit, sans-serif', cursor: 'pointer' }}>
-              Get started ✦
+            {/* Password — owners only */}
+            {selected === 'owner' && (
+              <>
+                <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#a0a0b0', display: 'block', marginBottom: 5 }}>Password</label>
+                <input type="password" placeholder="Min 6 characters" value={password} onChange={e => setPassword(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && signIn()}
+                  style={{ width: '100%', height: 46, border: '0.5px solid #ddd', borderRadius: 10, padding: '0 14px', fontSize: 16, marginBottom: 12, boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'Outfit, sans-serif', color: '#1a1a2e' }} />
+              </>
+            )}
+
+            {/* Error message */}
+            {error && (
+              <div style={{ background: '#FCEBEB', border: '0.5px solid #F7C1C1', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 12, color: '#E24B4A' }}>
+                {error}
+              </div>
+            )}
+
+            <button onClick={signIn} disabled={loading}
+              style={{ width: '100%', height: 50, background: loading ? '#ddd' : '#C4546A', color: 'white', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 500, fontFamily: 'Outfit, sans-serif', cursor: loading ? 'not-allowed' : 'pointer' }}>
+              {loading ? 'Please wait...' : isSignUp ? 'Create account ✦' : 'Get started ✦'}
             </button>
+
+            {/* Toggle sign in / sign up for owners */}
+            {selected === 'owner' && (
+              <p style={{ textAlign: 'center', fontSize: 12, color: '#6b6b80', marginTop: 12 }}>
+                {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+                <button onClick={() => { setIsSignUp(!isSignUp); setError('') }}
+                  style={{ color: '#C4546A', fontWeight: 500, border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontSize: 12 }}>
+                  {isSignUp ? 'Sign in' : 'Sign up'}
+                </button>
+              </p>
+            )}
           </div>
         </>
       )}
