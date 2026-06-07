@@ -1,15 +1,25 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 
 const DEFAULT_BRANDS = ['OPI', 'Essie', 'Gelish', 'CND Shellac', 'Zoya', 'China Glaze', 'Sally Hansen', 'Kiara Sky', 'SNS', 'Revel Nail', 'Orly', 'Butter London']
 
 interface Color {
-  id: number
+  id: string
   name: string
   brand: string
   hex: string
-  types: ('Gel' | 'Regular' | 'SNS')[]
+  types: string[]
   code: string
+}
+
+interface Salon {
+  id: string
+  name: string
+  address: string
+  phone: string
+  website: string
+  booking_url: string
 }
 
 export default function OwnerScreen() {
@@ -21,22 +31,24 @@ export default function OwnerScreen() {
   const [activeTab, setActiveTab] = useState<'salon'|'inventory'|'analytics'|'profile'>('salon')
 
   // Salon
-  const [salonName, setSalonName]     = useState('Luxe Nail Bar')
-  const [location,  setLocation]      = useState('Atlanta, GA')
-  const [phone,     setPhone]         = useState('')
-  const [webpage,   setWebpage]       = useState('')
-  const [booking,   setBooking]       = useState('')
+  const [salonId,     setSalonId]     = useState<string | null>(null)
+  const [salonName,   setSalonName]   = useState('')
+  const [location,    setLocation]    = useState('')
+  const [phone,       setPhone]       = useState('')
+  const [webpage,     setWebpage]     = useState('')
+  const [booking,     setBooking]     = useState('')
   const [logoPreview, setLogoPreview] = useState('')
-  const [saved,     setSaved]         = useState(false)
+  const [saved,       setSaved]       = useState(false)
+  const [saving,      setSaving]      = useState(false)
 
   // Profile
-  const [ownerName,      setOwnerName]      = useState('Salon Owner')
-  const [ownerEmail,     setOwnerEmail]     = useState('')
-  const [profileImg,     setProfileImg]     = useState('')
-  const [notifications,  setNotifications]  = useState(true)
-  const [mapVisible,     setMapVisible]     = useState(true)
-  const [clientMsg,      setClientMsg]      = useState(true)
-  const [profileSaved,   setProfileSaved]   = useState(false)
+  const [ownerName,     setOwnerName]     = useState('Salon Owner')
+  const [ownerEmail,    setOwnerEmail]    = useState('')
+  const [profileImg,    setProfileImg]    = useState('')
+  const [notifications, setNotifications] = useState(true)
+  const [mapVisible,    setMapVisible]    = useState(true)
+  const [clientMsg,     setClientMsg]     = useState(true)
+  const [profileSaved,  setProfileSaved]  = useState(false)
 
   // Brands
   const [brands,       setBrands]       = useState<string[]>(DEFAULT_BRANDS)
@@ -44,13 +56,8 @@ export default function OwnerScreen() {
   const [newBrandName, setNewBrandName] = useState('')
 
   // Colors
-  const [colors, setColors] = useState<Color[]>([
-    { id:1, name:'Lavender Dusk',   brand:'OPI',    hex:'#9B7DB8', types:['Gel'],            code:'GC H008' },
-    { id:2, name:'Berry Whisper',   brand:'Gelish', hex:'#8B5B8E', types:['Gel'],            code:'01708'   },
-    { id:3, name:'Ballet Slippers', brand:'Essie',  hex:'#FFCDD9', types:['Regular'],        code:'162'     },
-    { id:4, name:'Cherry Red',      brand:'OPI',    hex:'#C62828', types:['Gel','Regular'],  code:'GC L72'  },
-    { id:5, name:'Sage Green',      brand:'Zoya',   hex:'#A5D6A7', types:['Regular','SNS'],  code:'ZP1012'  },
-  ])
+  const [colors,        setColors]        = useState<Color[]>([])
+  const [loadingColors, setLoadingColors] = useState(false)
   const [showAddColor,  setShowAddColor]  = useState(false)
   const [filterType,    setFilterType]    = useState('All')
   const [searchQ,       setSearchQ]       = useState('')
@@ -59,7 +66,7 @@ export default function OwnerScreen() {
   const [newName,       setNewName]       = useState('')
   const [newBrand,      setNewBrand]      = useState('OPI')
   const [newHex,        setNewHex]        = useState('#C4546A')
-  const [newTypes,      setNewTypes]      = useState<('Gel'|'Regular'|'SNS')[]>(['Gel'])
+  const [newTypes,      setNewTypes]      = useState<string[]>(['Gel'])
   const [newCode,       setNewCode]       = useState('')
   const [suggestions,   setSuggestions]   = useState<Color[]>([])
 
@@ -68,7 +75,156 @@ export default function OwnerScreen() {
   const [scanningColor, setScanningColor] = useState(false)
   const [aiColorNote,   setAiColorNote]   = useState('')
 
-  // ── Handlers ──────────────────────────────────────────────────────────
+  // ── Load data from Supabase on mount ─────────────────────────────────
+  useEffect(() => {
+    loadSalon()
+  }, [])
+
+  useEffect(() => {
+    if (salonId) loadColors()
+  }, [salonId])
+
+  const loadSalon = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('salons')
+        .select('*')
+        .limit(1)
+        .single()
+
+      if (data && !error) {
+        setSalonId(data.id)
+        setSalonName(data.name || '')
+        setLocation(data.address || '')
+        setPhone(data.phone || '')
+        setWebpage(data.website || '')
+        setBooking(data.booking_url || '')
+      }
+    } catch (e) {
+      console.log('No salon yet — will create on save')
+    }
+  }
+
+  const loadColors = async () => {
+    if (!salonId) return
+    setLoadingColors(true)
+    try {
+      const { data, error } = await supabase
+        .from('colors')
+        .select('*')
+        .eq('salon_id', salonId)
+        .order('created_at', { ascending: true })
+
+      if (data && !error) {
+        setColors(data.map(c => ({
+          id: c.id,
+          name: c.name,
+          brand: c.brand || '',
+          hex: c.hex || '#C4546A',
+          types: c.types || ['Gel'],
+          code: c.code || '',
+        })))
+      }
+    } catch (e) {
+      console.log('Error loading colors:', e)
+    } finally {
+      setLoadingColors(false)
+    }
+  }
+
+  // ── Save salon to Supabase ────────────────────────────────────────────
+  const saveSalon = async () => {
+    if (!salonName) { alert('Please enter your salon name'); return }
+    setSaving(true)
+    try {
+      if (salonId) {
+        // Update existing
+        await supabase.from('salons').update({
+          name: salonName,
+          address: location,
+          phone,
+          website: webpage,
+          booking_url: booking,
+        }).eq('id', salonId)
+      } else {
+        // Create new
+        const { data } = await supabase.from('salons').insert({
+          name: salonName,
+          address: location,
+          phone,
+          website: webpage,
+          booking_url: booking,
+        }).select().single()
+        if (data) setSalonId(data.id)
+      }
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      alert('Error saving salon. Check your Supabase connection.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ── Add color to Supabase ─────────────────────────────────────────────
+  const addColor = async () => {
+    if (!newName) { alert('Please enter a color name'); return }
+    if (newTypes.length === 0) { alert('Please select at least one type'); return }
+
+    // If no salon yet, save salon first
+    let currentSalonId = salonId
+    if (!currentSalonId) {
+      if (!salonName) {
+        alert('Please save your salon profile first before adding colors.')
+        setActiveTab('salon')
+        return
+      }
+      const { data } = await supabase.from('salons').insert({
+        name: salonName, address: location, phone, website: webpage, booking_url: booking,
+      }).select().single()
+      if (data) { setSalonId(data.id); currentSalonId = data.id }
+    }
+
+    try {
+      const { data, error } = await supabase.from('colors').insert({
+        salon_id: currentSalonId,
+        name: newName,
+        brand: newBrand,
+        hex: newHex,
+        types: newTypes,
+        code: newCode,
+      }).select().single()
+
+      if (data && !error) {
+        setColors(prev => [...prev, {
+          id: data.id, name: data.name, brand: data.brand || '',
+          hex: data.hex || '#C4546A', types: data.types || ['Gel'], code: data.code || '',
+        }])
+        resetColorForm()
+        setShowAddColor(false)
+      }
+    } catch (e) {
+      alert('Error saving color. Please try again.')
+    }
+  }
+
+  // ── Delete color from Supabase ────────────────────────────────────────
+  const deleteColor = async (id: string) => {
+    try {
+      await supabase.from('colors').delete().eq('id', id)
+      setColors(prev => prev.filter(c => c.id !== id))
+    } catch (e) {
+      alert('Error removing color.')
+    }
+  }
+
+  // ── Update color hex ──────────────────────────────────────────────────
+  const updateColorHex = async (id: string, hex: string) => {
+    setColors(prev => prev.map(c => c.id === id ? { ...c, hex } : c))
+    await supabase.from('colors').update({ hex }).eq('id', id)
+  }
+
+  // ── Polish photo handlers ─────────────────────────────────────────────
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return
     setLogoPreview(URL.createObjectURL(file))
@@ -95,7 +251,7 @@ export default function OwnerScreen() {
     const px = Math.round(pctX * imgEl.naturalWidth)
     const py = Math.round(pctY * imgEl.naturalHeight)
     const area = 10
-    const d = ctx.getImageData(Math.max(0, px - area), Math.max(0, py - area), area * 2, area * 2).data
+    const d = ctx.getImageData(Math.max(0, px-area), Math.max(0, py-area), area*2, area*2).data
     let r = 0, g = 0, b = 0, cnt = 0
     for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i+1]; b += d[i+2]; cnt++ }
     r = Math.round(r/cnt); g = Math.round(g/cnt); b = Math.round(b/cnt)
@@ -138,7 +294,7 @@ export default function OwnerScreen() {
     setShowAddBrand(false)
   }
 
-  const toggleType = (t: 'Gel'|'Regular'|'SNS') => {
+  const toggleType = (t: string) => {
     setNewTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
   }
 
@@ -155,25 +311,12 @@ export default function OwnerScreen() {
     setSuggestions([])
   }
 
-  const addColor = () => {
-    if (!newName) { alert('Please enter a color name'); return }
-    if (newTypes.length === 0) { alert('Please select at least one type'); return }
-    setColors(prev => [...prev, { id: Date.now(), name: newName, brand: newBrand, hex: newHex, types: newTypes, code: newCode }])
-    resetColorForm()
-    setShowAddColor(false)
-  }
-
-  const saveSalon = () => {
-    if (!salonName) { alert('Please enter your salon name'); return }
-    setSaved(true); setTimeout(() => setSaved(false), 2000)
-  }
-
   const saveProfile = () => {
     setProfileSaved(true); setTimeout(() => setProfileSaved(false), 2000)
   }
 
   const filteredColors = colors.filter(c => {
-    const matchType = filterType === 'All' || c.types.includes(filterType as any)
+    const matchType   = filterType === 'All' || c.types.includes(filterType)
     const matchSearch = !searchQ || c.name.toLowerCase().includes(searchQ.toLowerCase()) || c.brand.toLowerCase().includes(searchQ.toLowerCase())
     return matchType && matchSearch
   })
@@ -262,9 +405,9 @@ export default function OwnerScreen() {
             💅 Manage polish inventory ({colors.length} colors)
           </button>
 
-          <button onClick={saveSalon}
-            style={{ width:'100%', height:50, background: saved ? '#1D9E75' : '#C4546A', color:'white', border:'none', borderRadius:12, fontSize:14, fontWeight:500, fontFamily:'Outfit, sans-serif', cursor:'pointer', transition:'background 0.3s' }}>
-            {saved ? '✓ Saved!' : 'Save salon profile ✦'}
+          <button onClick={saveSalon} disabled={saving}
+            style={{ width:'100%', height:50, background: saved ? '#1D9E75' : '#C4546A', color:'white', border:'none', borderRadius:12, fontSize:14, fontWeight:500, fontFamily:'Outfit, sans-serif', cursor:'pointer', transition:'background 0.3s', opacity: saving ? 0.7 : 1 }}>
+            {saving ? 'Saving...' : saved ? '✓ Saved to database!' : 'Save salon profile ✦'}
           </button>
         </div>
       )}
@@ -275,7 +418,9 @@ export default function OwnerScreen() {
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 18px', marginBottom:12 }}>
             <div>
               <p style={{ fontSize:14, fontWeight:500, color:'#1a1a2e', margin:0 }}>Polish inventory</p>
-              <p style={{ fontSize:11, color:'#a0a0b0', margin:'2px 0 0' }}>{colors.length} colors in your salon</p>
+              <p style={{ fontSize:11, color:'#a0a0b0', margin:'2px 0 0' }}>
+                {loadingColors ? 'Loading...' : `${colors.length} colors saved`}
+              </p>
             </div>
             <button onClick={() => { resetColorForm(); setShowAddColor(true) }}
               style={{ height:36, padding:'0 14px', background:'#C4546A', color:'white', border:'none', borderRadius:10, fontSize:12, fontWeight:500, fontFamily:'Outfit, sans-serif', cursor:'pointer' }}>
@@ -283,12 +428,14 @@ export default function OwnerScreen() {
             </button>
           </div>
 
+          {/* Search */}
           <div style={{ position:'relative', margin:'0 18px 10px' }}>
             <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:14, color:'#a0a0b0' }}>🔍</span>
             <input placeholder="Search colors..." value={searchQ} onChange={e => setSearchQ(e.target.value)}
               style={{ width:'100%', height:38, border:'0.5px solid #ddd', borderRadius:20, padding:'0 12px 0 34px', fontSize:13, boxSizing:'border-box', outline:'none', fontFamily:'Outfit, sans-serif', background:'#f8f7f9' }} />
           </div>
 
+          {/* Type filter */}
           <div style={{ display:'flex', gap:6, padding:'0 18px', marginBottom:12 }}>
             {['All','Gel','Regular','SNS'].map(f => (
               <button key={f} onClick={() => setFilterType(f)}
@@ -298,9 +445,20 @@ export default function OwnerScreen() {
             ))}
           </div>
 
-          {filteredColors.length === 0
-            ? <div style={{ textAlign:'center', padding:'3rem 1rem', color:'#a0a0b0' }}><div style={{ fontSize:32, marginBottom:8 }}>💅</div><p style={{ fontSize:13 }}>No colors found</p></div>
-            : filteredColors.map(c => (
+          {/* Color list */}
+          {loadingColors ? (
+            <div style={{ textAlign:'center', padding:'2rem', color:'#a0a0b0' }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>⏳</div>
+              <p style={{ fontSize:13 }}>Loading your colors...</p>
+            </div>
+          ) : filteredColors.length === 0 ? (
+            <div style={{ textAlign:'center', padding:'3rem 1rem', color:'#a0a0b0' }}>
+              <div style={{ fontSize:32, marginBottom:8 }}>💅</div>
+              <p style={{ fontSize:13, margin:'0 0 4px' }}>{colors.length === 0 ? 'No colors yet' : 'No colors found'}</p>
+              <p style={{ fontSize:11 }}>{colors.length === 0 ? 'Tap + Add color to build your inventory' : 'Try a different filter'}</p>
+            </div>
+          ) : (
+            filteredColors.map(c => (
               <div key={c.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 18px', borderBottom:'0.5px solid #eee' }}>
                 <div style={{ width:32, height:42, borderRadius:6, background:c.hex, border:'0.5px solid rgba(0,0,0,0.08)', flexShrink:0 }} />
                 <div style={{ flex:1, minWidth:0 }}>
@@ -310,14 +468,14 @@ export default function OwnerScreen() {
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:5 }}>
                   <input type="color" value={c.hex}
-                    onChange={e => setColors(prev => prev.map(x => x.id===c.id ? {...x, hex:e.target.value} : x))}
+                    onChange={e => updateColorHex(c.id, e.target.value)}
                     style={{ width:28, height:28, border:'0.5px solid #ddd', borderRadius:6, cursor:'pointer', padding:2 }} />
-                  <button onClick={() => setColors(prev => prev.filter(x => x.id !== c.id))}
+                  <button onClick={() => deleteColor(c.id)}
                     style={{ fontSize:10, color:'#E24B4A', border:'none', background:'none', cursor:'pointer', padding:0 }}>Remove</button>
                 </div>
               </div>
             ))
-          }
+          )}
         </div>
       )}
 
@@ -339,12 +497,12 @@ export default function OwnerScreen() {
               {profileImg ? <img src={profileImg} alt="profile" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <span style={{ fontSize:28 }}>👤</span>}
             </button>
             <p style={{ fontFamily:'Cormorant Garamond, serif', fontSize:22, fontWeight:400, color:'#1a1a2e', margin:'0 0 2px' }}>{ownerName || 'Salon Owner'}</p>
-            <p style={{ fontSize:12, color:'#a0a0b0', margin:0 }}>{salonName} · {location}</p>
+            <p style={{ fontSize:12, color:'#a0a0b0', margin:0 }}>{salonName || 'Your salon'} · {location || 'Location'}</p>
           </div>
 
           <SectionLabel label="Salon" />
           <SettingRow icon="🏪" label="Edit salon info"      sub="Name, location, phone, website" onClick={() => setActiveTab('salon')} />
-          <SettingRow icon="💅" label="Polish inventory"     sub={`${colors.length} colors`}      onClick={() => setActiveTab('inventory')} />
+          <SettingRow icon="💅" label="Polish inventory"     sub={`${colors.length} colors saved`} onClick={() => setActiveTab('inventory')} />
           <SettingRow icon="📅" label="Booking link"         sub={booking || 'Not set'} />
           <SettingRow icon="⏰" label="Business hours"       sub="Set your open hours" />
 
@@ -414,8 +572,7 @@ export default function OwnerScreen() {
             {/* Color name */}
             <label style={lbl}>Color name</label>
             <div style={{ position:'relative', marginBottom:12 }}>
-              <input placeholder="e.g. Lavender Dusk" value={newName} onChange={e => onColorNameInput(e.target.value)}
-                style={inp()} />
+              <input placeholder="e.g. Lavender Dusk" value={newName} onChange={e => onColorNameInput(e.target.value)} style={inp()} />
               {suggestions.length > 0 && (
                 <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'white', border:'0.5px solid #ddd', borderRadius:10, boxShadow:'0 4px 12px rgba(0,0,0,0.1)', zIndex:10, overflow:'hidden' }}>
                   {suggestions.map(s => (
@@ -482,8 +639,8 @@ export default function OwnerScreen() {
                 <div style={{ background:'#FFFBF0', border:'0.5px solid #FAC775', borderRadius:10, padding:'10px 12px', marginBottom:10 }}>
                   <p style={{ fontSize:11, fontWeight:500, color:'#C4700A', margin:'0 0 6px' }}>📋 For best color accuracy:</p>
                   {[
-                    '📄 Place polish on a plain white background — paper, napkin, or table liner',
-                    '☀️ Avoid strong shadows and direct glare on the bottle',
+                    '📄 Place polish on a plain white background',
+                    '☀️ Avoid strong shadows and direct glare',
                     '🎯 Center the color sample in the photo',
                   ].map(tip => (
                     <p key={tip} style={{ fontSize:11, color:'#6b6b80', margin:'3px 0', lineHeight:1.4 }}>{tip}</p>
@@ -500,7 +657,7 @@ export default function OwnerScreen() {
               </>
             )}
 
-            {/* Step 2 — Tap to pick (photo shown, no result yet) */}
+            {/* Step 2 — Tap to pick */}
             {polishPreview && !scanningColor && !aiColorNote && (
               <>
                 <div style={{ background:'#EEEDF8', border:'0.5px solid rgba(44,43,75,0.15)', borderRadius:10, padding:'8px 12px', marginBottom:8, display:'flex', alignItems:'center', gap:7 }}>
@@ -537,7 +694,7 @@ export default function OwnerScreen() {
               </div>
             )}
 
-            {/* Step 4 — AI result + re-tap option */}
+            {/* Step 4 — AI result */}
             {aiColorNote && !scanningColor && (
               <div style={{ marginBottom:10 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'#E1F5EE', borderRadius:10, border:'0.5px solid #A5D6C0', marginBottom:8 }}>
@@ -549,7 +706,6 @@ export default function OwnerScreen() {
                   <button onClick={() => { setPolishPreview(''); setAiColorNote('') }}
                     style={{ fontSize:10, color:'#C4546A', border:'none', background:'none', cursor:'pointer', flexShrink:0 }}>Retake</button>
                 </div>
-                {/* Photo still tappable for re-pick */}
                 <div style={{ position:'relative', borderRadius:10, overflow:'hidden', border:'0.5px solid #ddd', cursor:'crosshair' }}
                   onClick={handleImageTap}>
                   <img src={polishPreview} alt="polish" crossOrigin="anonymous"
@@ -558,7 +714,7 @@ export default function OwnerScreen() {
               </div>
             )}
 
-            {/* Manual color — always visible */}
+            {/* Manual color */}
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14, padding:'8px 10px', background:'#f8f7f9', borderRadius:10, border:'0.5px solid #eee' }}>
               <input type="color" value={newHex} onChange={e => setNewHex(e.target.value)}
                 style={{ width:40, height:40, border:'0.5px solid #ddd', borderRadius:8, cursor:'pointer', padding:3, flexShrink:0 }} />
