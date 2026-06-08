@@ -260,14 +260,17 @@ export default function OwnerScreen() {
     setAiColorNote('')
     setScanningColor(true)
 
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 150,
-        messages: [{ role: 'user', content: `Nail polish sampled hex: ${tappedHex}. Correct for photo lighting and glossy bottle reflection to return the true nail polish color. Return ONLY JSON: {"hex":"#xxxxxx","description":"3-5 word color name"}` }]
-      })
-    })
+   fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match-colors`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ outfitHex: tappedHex, skinName: 'polish bottle', skinHex: tappedHex, undertone: 'neutral', nailType: 'Gel' })
+      }
+    )
     .then(res => res.json())
     .then(data => {
       const p = JSON.parse(data.content[0].text.trim().replace(/```json|```/g,''))
