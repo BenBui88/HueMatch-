@@ -95,8 +95,7 @@ export default function MatchScreen() {
       setResults(Array.isArray(colors) ? colors : FALLBACK)
       })
       const data = await res.json()
-      const text = data.content[0].text.trim().replace(/```json|```/g, '').trim()
-      setResults(JSON.parse(text))
+      const text = data.content[0])
     } catch {
       setResults(FALLBACK[nailType] || FALLBACK.Gel)
     } finally {
