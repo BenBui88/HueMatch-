@@ -25,16 +25,20 @@ export async function getColorMatches(
   undertone: string,
   nailType: string
 ): Promise<ColorMatch[]> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1200,
-      messages: [{
-        role: 'user',
-        content: `You are a professional nail colorist. Outfit: ${outfitHex}. Skin tone: ${skinName} (${undertone} undertone, hex: ${skinHex}). Nail type: ${nailType}. Return ONLY a JSON array of 6 shades: [{"name":"...","brand":"...","hex":"#xxxxxx","match":95,"reason":"outfit reason","skinReason":"skin reason"}]. Real brands only. Sort by match descending.`
-      }],
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match-colors`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ outfitHex, skinName, skinHex, undertone, nailType }),
+    }
+  )
+  const data = await response.json()
+  return Array.isArray(data) ? data as ColorMatch[] : getFallbackMatches(nailType)
+}),
     }),
   })
   const data = await response.json()
