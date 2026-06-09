@@ -80,14 +80,19 @@ export default function MatchScreen() {
     let i = 0
     const iv = setInterval(() => { setThinking(steps[i] || steps[steps.length - 1]); i++ }, 700)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1200,
-          messages: [{ role: 'user', content: `You are a nail colorist. Outfit: ${outfitHex}. Skin tone: ${skinName || 'medium'} (${undertone} undertone, hex: ${skinHex || '#D4956A'}). Nail type: ${nailType}. Return ONLY a JSON array of 6 shades: [{"name":"...","brand":"...","hex":"#xxxxxx","match":95,"reason":"..."}]. Real brands only. Sort by match desc.` }],
-        }),
+     const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/match-colors`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ outfitHex, skinName, skinHex, undertone, nailType })
+        }
+      )
+      const colors = await res.json()
+      setResults(Array.isArray(colors) ? colors : FALLBACK)
       })
       const data = await res.json()
       const text = data.content[0].text.trim().replace(/```json|```/g, '').trim()
