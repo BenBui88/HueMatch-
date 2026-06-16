@@ -521,24 +521,116 @@ export default function OwnerScreen() {
               </>
             )}
 
-            {polishPreview && !scanningColor && !aiColorNote && (
+           {polishPreview && !scanningColor && !aiColorNote && (
               <>
                 <div style={{ background:'#EEEDF8', border:'0.5px solid rgba(44,43,75,0.15)', borderRadius:10, padding:'8px 12px', marginBottom:8, display:'flex', alignItems:'center', gap:7 }}>
                   <span style={{ fontSize:16 }}>👆</span>
-                  <p style={{ fontSize:11, color:'#2C2B4B', margin:0, lineHeight:1.4 }}><strong>Tap the color area</strong> on your photo to extract that exact shade</p>
+                  <p style={{ fontSize:11, color:'#2C2B4B', margin:0, lineHeight:1.4 }}>
+                    <strong>Pinch to zoom</strong>, drag to move, then <strong>tap ✕ to extract</strong> that color
+                  </p>
                 </div>
-                <div style={{ position:'relative', borderRadius:10, overflow:'hidden', marginBottom:8, border:'1.5px solid #C4546A', cursor:'crosshair' }} onClick={handleImageTap}>
-                  <img src={polishPreview} alt="polish" crossOrigin="anonymous" style={{ width:'100%', maxHeight:200, objectFit:'contain', display:'block', background:'#f8f8f8' }} />
-                  <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none' }}>
-                    <div style={{ background:'rgba(196,84,106,0.15)', border:'1.5px solid rgba(196,84,106,0.5)', borderRadius:8, padding:'5px 12px' }}>
-                      <p style={{ fontSize:11, color:'#C4546A', margin:0, fontWeight:500 }}>Tap color to extract ✦</p>
+
+                {/* Zoomable pan container */}
+                <div
+                  style={{ position:'relative', borderRadius:10, overflow:'hidden', marginBottom:8, border:'1.5px solid #C4546A', height:220, background:'#f8f8f8', touchAction:'none' }}
+                  ref={(el) => {
+                    if (!el) return
+                    // Set up pinch zoom and pan
+                    let scale = 1, startDist = 0
+                    let panX = 0, panY = 0
+                    let startPanX = 0, startPanY = 0
+                    let lastTouchX = 0, lastTouchY = 0
+                    let isPanning = false
+
+                    const img = el.querySelector('img') as HTMLImageElement
+                    const crosshair = el.querySelector('.crosshair') as HTMLElement
+                    if (!img) return
+
+                    const applyTransform = () => {
+                      img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`
+                      img.style.transformOrigin = 'center center'
+                    }
+
+                    el.ontouchstart = (e) => {
+                      if (e.touches.length === 2) {
+                        const dx = e.touches[0].clientX - e.touches[1].clientX
+                        const dy = e.touches[0].clientY - e.touches[1].clientY
+                        startDist = Math.sqrt(dx*dx + dy*dy)
+                      } else if (e.touches.length === 1) {
+                        isPanning = true
+                        lastTouchX = e.touches[0].clientX
+                        lastTouchY = e.touches[0].clientY
+                        startPanX = panX
+                        startPanY = panY
+                      }
+                    }
+
+                    el.ontouchmove = (e) => {
+                      e.preventDefault()
+                      if (e.touches.length === 2) {
+                        const dx = e.touches[0].clientX - e.touches[1].clientX
+                        const dy = e.touches[0].clientY - e.touches[1].clientY
+                        const dist = Math.sqrt(dx*dx + dy*dy)
+                        scale = Math.min(4, Math.max(1, scale * (dist / startDist)))
+                        startDist = dist
+                        applyTransform()
+                      } else if (e.touches.length === 1 && isPanning) {
+                        panX = startPanX + (e.touches[0].clientX - lastTouchX)
+                        panY = startPanY + (e.touches[0].clientY - lastTouchY)
+                        applyTransform()
+                      }
+                    }
+
+                    el.ontouchend = () => { isPanning = false }
+                  }}
+                  onClick={(e) => {
+                    // On tap extract color at crosshair center
+                    const rect = e.currentTarget.getBoundingClientRect()
+                    const imgEl = e.currentTarget.querySelector('img') as HTMLImageElement
+                    if (!imgEl) return
+                    // Sample from center of container (where crosshair is)
+                    const pctX = 0.5
+                    const pctY = 0.5
+                    sampleAndAI(pctX, pctY, imgEl)
+                  }}
+                >
+                  <img
+                    src={polishPreview}
+                    alt="polish"
+                    crossOrigin="anonymous"
+                    style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', transition:'transform 0.05s', cursor:'crosshair' }}
+                  />
+                  {/* Fixed crosshair in center */}
+                  <div className="crosshair" style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', pointerEvents:'none', zIndex:10 }}>
+                    <div style={{ position:'relative', width:40, height:40 }}>
+                      {/* Horizontal line */}
+                      <div style={{ position:'absolute', top:'50%', left:0, right:0, height:1.5, background:'#C4546A', transform:'translateY(-50%)' }} />
+                      {/* Vertical line */}
+                      <div style={{ position:'absolute', left:'50%', top:0, bottom:0, width:1.5, background:'#C4546A', transform:'translateX(-50%)' }} />
+                      {/* Center dot */}
+                      <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:8, height:8, borderRadius:'50%', background:'#C4546A', border:'2px solid white' }} />
+                    </div>
+                  </div>
+                  {/* Tap hint */}
+                  <div style={{ position:'absolute', bottom:8, left:0, right:0, display:'flex', justifyContent:'center', pointerEvents:'none' }}>
+                    <div style={{ background:'rgba(196,84,106,0.85)', borderRadius:20, padding:'4px 12px' }}>
+                      <p style={{ fontSize:10, color:'white', margin:0, fontWeight:500 }}>Tap anywhere to extract color at ✕</p>
                     </div>
                   </div>
                 </div>
-                <button onClick={() => { setPolishPreview(''); setAiColorNote('') }} style={{ fontSize:11, color:'#6b6b80', border:'none', background:'none', cursor:'pointer', marginBottom:8, display:'block' }}>← Retake photo</button>
+
+                <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                  <button onClick={() => polishCamRef.current?.click()}
+                    style={{ flex:1, height:32, background:'#FDF0F2', border:'0.5px solid #F4C0D1', borderRadius:8, fontSize:11, color:'#C4546A', cursor:'pointer' }}>
+                    📷 Retake
+                  </button>
+                  <button onClick={() => { setPolishPreview(''); setAiColorNote('') }}
+                    style={{ flex:1, height:32, background:'transparent', border:'0.5px solid #ddd', borderRadius:8, fontSize:11, color:'#6b6b80', cursor:'pointer' }}>
+                    ← Start over
+                  </button>
+                </div>
               </>
             )}
-
             {scanningColor && (
               <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 12px', background:'#EEEDF8', borderRadius:10, marginBottom:10 }}>
                 <span style={{ fontSize:16 }}>✦</span>
