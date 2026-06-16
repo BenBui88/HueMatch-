@@ -47,6 +47,9 @@ export default function OwnerScreen() {
   const [colors,        setColors]        = useState<Color[]>([])
   const [loadingColors, setLoadingColors] = useState(false)
   const [showAddColor,  setShowAddColor]  = useState(false)
+  const [editingColor,    setEditingColor]    = useState<Color | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  
   const [filterType,    setFilterType]    = useState('All')
   const [searchQ,       setSearchQ]       = useState('')
 
@@ -333,22 +336,40 @@ export default function OwnerScreen() {
               <p style={{ fontSize:13, margin:'0 0 4px' }}>{colors.length === 0 ? 'No colors yet' : 'No colors found'}</p>
               <p style={{ fontSize:11 }}>{colors.length === 0 ? 'Tap + Add color to build your inventory' : 'Try a different filter'}</p>
             </div>
-          ) : filteredColors.map(c => (
-            <div key={c.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 18px', borderBottom:'0.5px solid #eee' }}>
-              <div style={{ width:32, height:42, borderRadius:6, background:c.hex, border:'0.5px solid rgba(0,0,0,0.08)', flexShrink:0 }} />
-              <div style={{ flex:1, minWidth:0 }}>
-                <p style={{ fontSize:13, fontWeight:500, color:'#1a1a2e', margin:0 }}>{c.name}</p>
-                <p style={{ fontSize:10, color:'#6b6b80', margin:'2px 0 0' }}>{c.brand}{c.code ? ' · '+c.code : ''}</p>
-                <div>{c.types.map(t => <TypeBadge key={t} type={t} />)}</div>
+          ) :
+           filteredColors.map(c => (
+            <div key={c.id}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 18px', borderBottom:'0.5px solid #eee' }}>
+                <div style={{ width:32, height:42, borderRadius:6, background:c.hex, border:'0.5px solid rgba(0,0,0,0.08)', flexShrink:0 }} />
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontSize:13, fontWeight:500, color:'#1a1a2e', margin:0 }}>{c.name}</p>
+                  <p style={{ fontSize:10, color:'#6b6b80', margin:'2px 0 0' }}>{c.brand}{c.code ? ' · '+c.code : ''}</p>
+                  <div>{c.types.map(t => <TypeBadge key={t} type={t} />)}</div>
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:5 }}>
+                  <button onClick={() => setEditingColor(c)}
+                    style={{ fontSize:10, color:'#2C2B4B', border:'0.5px solid #ddd', background:'#EEEDF8', borderRadius:6, cursor:'pointer', padding:'3px 8px' }}>Edit</button>
+                  <button onClick={() => setConfirmDeleteId(c.id)}
+                    style={{ fontSize:10, color:'#E24B4A', border:'none', background:'none', cursor:'pointer', padding:0 }}>Remove</button>
+                </div>
               </div>
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:5 }}>
-                <input type="color" value={c.hex} onChange={e => updateColorHex(c.id, e.target.value)}
-                  style={{ width:28, height:28, border:'0.5px solid #ddd', borderRadius:6, cursor:'pointer', padding:2 }} />
-                <button onClick={() => deleteColor(c.id)}
-                  style={{ fontSize:10, color:'#E24B4A', border:'none', background:'none', cursor:'pointer', padding:0 }}>Remove</button>
-              </div>
+
+              {/* 2-step delete confirmation */}
+              {confirmDeleteId === c.id && (
+                <div style={{ margin:'0 18px 8px', padding:'10px 12px', background:'#FCEBEB', borderRadius:10, border:'0.5px solid #F7C1C1', display:'flex', alignItems:'center', gap:10 }}>
+                  <p style={{ fontSize:12, color:'#E24B4A', margin:0, flex:1 }}>Delete <strong>{c.name}</strong>? This cannot be undone.</p>
+                  <button onClick={() => { deleteColor(c.id); setConfirmDeleteId(null) }}
+                    style={{ height:28, padding:'0 10px', background:'#E24B4A', color:'white', border:'none', borderRadius:6, fontSize:11, cursor:'pointer', fontFamily:'Outfit, sans-serif', flexShrink:0 }}>
+                    Yes, delete
+                  </button>
+                  <button onClick={() => setConfirmDeleteId(null)}
+                    style={{ height:28, padding:'0 10px', background:'white', color:'#6b6b80', border:'0.5px solid #ddd', borderRadius:6, fontSize:11, cursor:'pointer', fontFamily:'Outfit, sans-serif', flexShrink:0 }}>
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
-          ))}
+          )) }
         </div>
       )}
 
@@ -432,6 +453,74 @@ export default function OwnerScreen() {
       {/* ══ ADD COLOR POPUP ════════════════════════════════════════════ */}
       {showAddColor && (
         <>
+          {/* ══ EDIT COLOR POPUP ══════════════════════════════════════ */}
+      {editingColor && (
+        <>
+          <div onClick={() => setEditingColor(null)}
+            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:40 }} />
+          <div style={{ position:'fixed', top:'5%', left:'50%', transform:'translateX(-50%)', width:'92%', maxWidth:390, background:'white', borderRadius:20, padding:'1.25rem', zIndex:50, boxShadow:'0 4px 24px rgba(0,0,0,0.2)' }}>
+
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+              <p style={{ fontSize:16, fontWeight:500, color:'#1a1a2e', margin:0 }}>Edit color</p>
+              <button onClick={() => setEditingColor(null)}
+                style={{ width:28, height:28, borderRadius:'50%', background:'#f0f0f0', border:'none', cursor:'pointer', fontSize:14 }}>✕</button>
+            </div>
+
+            <label style={lbl}>Color name</label>
+            <input value={editingColor.name} onChange={e => setEditingColor({...editingColor, name: e.target.value})}
+              style={inp({ marginBottom:12 })} />
+
+            <label style={lbl}>Brand</label>
+            <select value={editingColor.brand} onChange={e => setEditingColor({...editingColor, brand: e.target.value})}
+              style={{ width:'100%', height:44, border:'0.5px solid #ddd', borderRadius:10, padding:'0 10px', fontSize:14, outline:'none', fontFamily:'Outfit, sans-serif', background:'white', marginBottom:12, boxSizing:'border-box' as const }}>
+              {brands.map(b => <option key={b}>{b}</option>)}
+            </select>
+
+            <label style={{ ...lbl, marginBottom:5 }}>Type</label>
+            <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+              {(['Gel','Regular','SNS'] as const).map(t => (
+                <button key={t} onClick={() => {
+                  const types = editingColor.types.includes(t)
+                    ? editingColor.types.filter(x => x !== t)
+                    : [...editingColor.types, t]
+                  setEditingColor({...editingColor, types})
+                }}
+                  style={{ flex:1, height:40, borderRadius:10, border: editingColor.types.includes(t) ? '2px solid #C4546A' : '0.5px solid #ddd', background: editingColor.types.includes(t) ? '#FDF0F2' : 'white', color: editingColor.types.includes(t) ? '#C4546A' : '#6b6b80', fontSize:12, cursor:'pointer', fontFamily:'Outfit, sans-serif' }}>
+                  {editingColor.types.includes(t) ? '✓ ' : ''}{t==='SNS'?'SNS/Dip':t}
+                </button>
+              ))}
+            </div>
+
+            <label style={lbl}>Color</label>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12, padding:'8px 10px', background:'#f8f7f9', borderRadius:10, border:'0.5px solid #eee' }}>
+              <input type="color" value={editingColor.hex} onChange={e => setEditingColor({...editingColor, hex: e.target.value})}
+                style={{ width:40, height:40, border:'0.5px solid #ddd', borderRadius:8, cursor:'pointer', padding:3, flexShrink:0 }} />
+              <input type="text" value={editingColor.hex} onChange={e => { if(/^#[0-9a-fA-F]{6}$/.test(e.target.value)) setEditingColor({...editingColor, hex: e.target.value}) }}
+                style={{ flex:1, height:30, border:'0.5px solid #ddd', borderRadius:7, padding:'0 8px', fontSize:12, outline:'none', fontFamily:'Outfit, sans-serif', boxSizing:'border-box' as const }} />
+              <div style={{ width:40, height:40, borderRadius:8, background:editingColor.hex, border:'0.5px solid rgba(0,0,0,0.08)', flexShrink:0 }} />
+            </div>
+
+            <label style={lbl}>Product code (optional)</label>
+            <input value={editingColor.code} onChange={e => setEditingColor({...editingColor, code: e.target.value})}
+              placeholder="e.g. GC H008" style={inp({ marginBottom:16 })} />
+
+            <button onClick={async () => {
+              await supabase.from('colors').update({
+                name: editingColor.name,
+                brand: editingColor.brand,
+                hex: editingColor.hex,
+                types: editingColor.types,
+                code: editingColor.code,
+              }).eq('id', editingColor.id)
+              setColors(prev => prev.map(c => c.id === editingColor.id ? editingColor : c))
+              setEditingColor(null)
+            }}
+              style={{ width:'100%', height:50, background:'#C4546A', color:'white', border:'none', borderRadius:12, fontSize:14, fontWeight:500, fontFamily:'Outfit, sans-serif', cursor:'pointer' }}>
+              Save changes ✦
+            </button>
+          </div>
+        </>
+      )}
           <div onClick={() => { setShowAddColor(false); resetColorForm() }}
             style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:40 }} />
           <div style={{ position:'fixed', top:'3%', left:'50%', transform:'translateX(-50%)', width:'92%', maxWidth:390, background:'white', borderRadius:20, padding:'1.25rem 1.25rem 1.5rem', zIndex:50, boxShadow:'0 4px 24px rgba(0,0,0,0.2)', maxHeight:'92vh', overflowY:'auto' }}>
