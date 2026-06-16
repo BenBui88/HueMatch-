@@ -17,7 +17,8 @@ export default function OwnerScreen() {
   const navigate = useNavigate()
   const logoInputRef  = useRef<HTMLInputElement>(null)
   const profileImgRef = useRef<HTMLInputElement>(null)
-  const polishCamRef  = useRef<HTMLInputElement>(null)
+  const polishCamRef    = useRef<HTMLInputElement>(null)
+  const polishLibRef    = useRef<HTMLInputElement>(null)
 
   const [activeTab, setActiveTab] = useState<'salon'|'inventory'|'analytics'|'profile'>('salon')
 
@@ -241,8 +242,8 @@ export default function OwnerScreen() {
 
       <input ref={logoInputRef}  type="file" accept="image/*" onChange={handleLogoUpload}  style={{ display:'none' }} />
       <input ref={profileImgRef} type="file" accept="image/*" onChange={handleProfileImg}  style={{ display:'none' }} />
-      <input ref={polishCamRef}  type="file" accept="image/*" onChange={handlePolishPhoto} style={{ display:'none' }} />
-
+      <input ref={polishCamRef} type="file" accept="image/*" capture="environment" onChange={handlePolishPhoto} style={{ display:'none' }} />
+      
       <div style={{ display:'flex', justifyContent:'space-between', padding:'12px 20px 4px', fontSize:11, fontWeight:500 }}>
         <span>9:41</span><span>●●●</span>
       </div>
@@ -504,14 +505,19 @@ export default function OwnerScreen() {
                     <p key={tip} style={{ fontSize:11, color:'#6b6b80', margin:'3px 0', lineHeight:1.4 }}>{tip}</p>
                   ))}
                 </div>
-                <button onClick={() => polishCamRef.current?.click()}
-                  style={{ width:'100%', height:72, border:'1.5px dashed #F4C0D1', borderRadius:10, background:'#FDF0F2', cursor:'pointer', marginBottom:10, display:'flex', alignItems:'center', justifyContent:'center', gap:10 }}>
-                  <span style={{ fontSize:26 }}>📷</span>
-                  <div style={{ textAlign:'left' as const }}>
-                    <p style={{ fontSize:13, fontWeight:500, color:'#C4546A', margin:0 }}>Take photo or upload</p>
-                    <p style={{ fontSize:10, color:'#a0a0b0', margin:'2px 0 0' }}>Then tap to pick the exact color</p>
-                  </div>
-                </button>
+                <input ref={polishLibRef} type="file" accept="image/*" onChange={handlePolishPhoto} style={{ display:'none' }} />
+<div style={{ display:'flex', gap:8, marginBottom:10 }}>
+  <button onClick={() => polishCamRef.current?.click()}
+    style={{ flex:1, height:72, border:'1.5px dashed #F4C0D1', borderRadius:10, background:'#FDF0F2', cursor:'pointer', display:'flex', flexDirection:'column' as const, alignItems:'center', justifyContent:'center', gap:4 }}>
+    <span style={{ fontSize:24 }}>📷</span>
+    <p style={{ fontSize:11, fontWeight:500, color:'#C4546A', margin:0 }}>Take photo</p>
+  </button>
+  <button onClick={() => polishLibRef.current?.click()}
+    style={{ flex:1, height:72, border:'1.5px dashed #ddd', borderRadius:10, background:'#f8f7f9', cursor:'pointer', display:'flex', flexDirection:'column' as const, alignItems:'center', justifyContent:'center', gap:4 }}>
+    <span style={{ fontSize:24 }}>🖼️</span>
+    <p style={{ fontSize:11, fontWeight:500, color:'#6b6b80', margin:0 }}>Upload photo</p>
+  </button>
+</div>
               </>
             )}
 
@@ -551,7 +557,16 @@ export default function OwnerScreen() {
                     <p style={{ fontSize:12, fontWeight:500, color:'#1D9E75', margin:0 }}>✓ {aiColorNote}</p>
                     <p style={{ fontSize:10, color:'#6b6b80', margin:'2px 0 0' }}>Tap a different spot to re-pick</p>
                   </div>
-                  <button onClick={() => { setPolishPreview(''); setAiColorNote('') }} style={{ fontSize:10, color:'#C4546A', border:'none', background:'none', cursor:'pointer', flexShrink:0 }}>Retake</button>
+                 <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+  <button onClick={() => polishCamRef.current?.click()}
+    style={{ flex:1, height:32, background:'#FDF0F2', border:'0.5px solid #F4C0D1', borderRadius:8, fontSize:11, color:'#C4546A', cursor:'pointer' }}>
+    📷 Retake
+  </button>
+  <button onClick={() => { setPolishPreview(''); setAiColorNote('') }}
+    style={{ flex:1, height:32, background:'transparent', border:'0.5px solid #ddd', borderRadius:8, fontSize:11, color:'#6b6b80', cursor:'pointer' }}>
+    ← Start over
+  </button>
+</div>
                 </div>
                 <div style={{ position:'relative', borderRadius:10, overflow:'hidden', border:'0.5px solid #ddd', cursor:'crosshair' }} onClick={handleImageTap}>
                   <img src={polishPreview} alt="polish" crossOrigin="anonymous" style={{ width:'100%', maxHeight:120, objectFit:'contain', display:'block', background:'#f8f8f8' }} />
