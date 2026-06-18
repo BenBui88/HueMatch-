@@ -11,6 +11,8 @@ interface Color {
   hex: string
   types: string[]
   code: string
+  is_public: boolean
+  photo_url: string
 }
 
 export default function OwnerScreen() {
@@ -59,6 +61,8 @@ export default function OwnerScreen() {
   const [newTypes,      setNewTypes]      = useState<string[]>(['Gel'])
   const [newCode,       setNewCode]       = useState('')
   const [suggestions,   setSuggestions]   = useState<Color[]>([])
+  const [newIsPublic,   setNewIsPublic]   = useState(true)
+  const [communitySuggestions, setCommunitySuggestions] = useState<Color[]>([])
 
   const [polishPreview, setPolishPreview] = useState('')
   const [scanningColor, setScanningColor] = useState(false)
@@ -85,8 +89,9 @@ export default function OwnerScreen() {
     if (!salonId) return
     setLoadingColors(true)
     try {
-      const { data } = await supabase.from('colors').select('*').eq('salon_id', salonId).order('created_at', { ascending: true })
-      if (data) setColors(data.map(c => ({ id: c.id, name: c.name, brand: c.brand || '', hex: c.hex || '#C4546A', types: c.types || ['Gel'], code: c.code || '' })))
+  const { data } = await supabase.from('colors').insert({ salon_id: currentSalonId, name: newName, brand: newBrand, hex: newHex, types: newTypes, code: newCode, is_public: newIsPublic, photo_url: polishPreview ? polishPreview : '' }).select().single()
+      if (data) {
+        setColors(prev => [...prev, { id: data.id, name: data.name, brand: data.brand || '', hex: data.hex || '#C4546A', types: data.types || ['Gel'], code: data.code || '', is_public: data.is_public ?? true, photo_url: data.photo_url || '' }])
     } catch (e) { console.log('Error loading colors') }
     finally { setLoadingColors(false) }
   }
@@ -188,16 +193,28 @@ export default function OwnerScreen() {
 
   const toggleType = (t: string) => setNewTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
 
-  const onColorNameInput = (val: string) => {
+  const onColorNameInput = async (val: string) => {
     setNewName(val)
-    if (val.length < 2) { setSuggestions([]); return }
-    setSuggestions(colors.filter(c => c.name.toLowerCase().includes(val.toLowerCase())).slice(0,4))
+    if (val.length < 2) { setSuggestions([]); setCommunitySuggestions([]); return }
+    // Local suggestions
+    setSuggestions(colors.filter(c => c.name.toLowerCase().includes(val.toLowerCase())).slice(0,3))
+    // Community suggestions from other salons
+    try {
+      const { data } = await supabase.from('colors')
+        .select('*')
+        .ilike('name', `%${val}%`)
+        .eq('is_public', true)
+        .neq('salon_id', salonId)
+        .limit(4)
+      if (data) setCommunitySuggestions(data.map(c => ({ id: c.id, name: c.name, brand: c.brand || '', hex: c.hex || '#C4546A', types: c.types || ['Gel'], code: c.code || '', is_public: true, photo_url: c.photo_url || '' })))
+    } catch { setCommunitySuggestions([]) }
   }
 
-  const resetColorForm = () => {
+const resetColorForm = () => {
     setNewName(''); setNewBrand('OPI'); setNewHex('#C4546A')
-    setNewTypes(['Gel']); setNewCode('')
-    setPolishPreview(''); setAiColorNote(''); setScanningColor(false); setSuggestions([])
+    setNewTypes(['Gel']); setNewCode(''); setNewIsPublic(true)
+    setPolishPreview(''); setAiColorNote(''); setScanningColor(false)
+    setSuggestions([]); setCommunitySuggestions([])
   }
 
   const saveProfile = () => { setProfileSaved(true); setTimeout(() => setProfileSaved(false), 2000) }
@@ -340,11 +357,19 @@ export default function OwnerScreen() {
            filteredColors.map(c => (
             <div key={c.id}>
               <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 18px', borderBottom:'0.5px solid #eee' }}>
-                <div style={{ width:32, height:42, borderRadius:6, background:c.hex, border:'0.5px solid rgba(0,0,0,0.08)', flexShrink:0 }} />
+                <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+                  <div style={{ width:28, height:42, borderRadius:6, background:c.hex, border:'0.5px solid rgba(0,0,0,0.08)' }} />
+                  {c.photo_url && <img src={c.photo_url} alt={c.name} style={{ width:28, height:42, borderRadius:6, objectFit:'cover', border:'0.5px solid rgba(0,0,0,0.08)' }} />}
+                </div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <p style={{ fontSize:13, fontWeight:500, color:'#1a1a2e', margin:0 }}>{c.name}</p>
                   <p style={{ fontSize:10, color:'#6b6b80', margin:'2px 0 0' }}>{c.brand}{c.code ? ' · '+c.code : ''}</p>
-                  <div>{c.types.map(t => <TypeBadge key={t} type={t} />)}</div>
+               <div style={{ display:'flex', alignItems:'center', flexWrap:'wrap' as const, gap:2 }}>
+                    {c.types.map(t => <TypeBadge key={t} type={t} />)}
+                    <span style={{ fontSize:9, padding:'1px 6px', borderRadius:999, background: c.is_public ? '#E1F5EE' : '#f0f0f0', color: c.is_public ? '#1D9E75' : '#a0a0b0', marginTop:3 }}>
+                      {c.is_public ? '✦ Public' : '🔒 Private'}
+                    </span>
+                  </div>
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:5 }}>
                   <button onClick={() => setEditingColor(c)}
@@ -534,13 +559,33 @@ export default function OwnerScreen() {
             <label style={lbl}>Color name</label>
             <div style={{ position:'relative', marginBottom:12 }}>
               <input placeholder="e.g. Lavender Dusk" value={newName} onChange={e => onColorNameInput(e.target.value)} style={inp()} />
-              {suggestions.length > 0 && (
+            {(suggestions.length > 0 || communitySuggestions.length > 0) && (
                 <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'white', border:'0.5px solid #ddd', borderRadius:10, boxShadow:'0 4px 12px rgba(0,0,0,0.1)', zIndex:10, overflow:'hidden' }}>
+                  {suggestions.length > 0 && (
+                    <div style={{ padding:'6px 12px 2px', fontSize:9, fontWeight:500, textTransform:'uppercase' as const, letterSpacing:'0.08em', color:'#a0a0b0' }}>Your inventory</div>
+                  )}
                   {suggestions.map(s => (
-                    <button key={s.id} onClick={() => { setNewName(s.name); setNewBrand(s.brand); setNewHex(s.hex); setNewTypes(s.types); setNewCode(s.code); setSuggestions([]) }}
+                    <button key={s.id} onClick={() => { setNewName(s.name); setNewBrand(s.brand); setNewHex(s.hex); setNewTypes(s.types); setNewCode(s.code); setSuggestions([]); setCommunitySuggestions([]) }}
                       style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'8px 12px', border:'none', background:'transparent', cursor:'pointer', textAlign:'left' as const }}>
                       <div style={{ width:24, height:30, borderRadius:4, background:s.hex, flexShrink:0 }} />
                       <div><p style={{ fontSize:12, fontWeight:500, color:'#1a1a2e', margin:0 }}>{s.name}</p><p style={{ fontSize:10, color:'#6b6b80', margin:0 }}>{s.brand}</p></div>
+                    </button>
+                  ))}
+                  {communitySuggestions.length > 0 && (
+                    <div style={{ padding:'6px 12px 2px', fontSize:9, fontWeight:500, textTransform:'uppercase' as const, letterSpacing:'0.08em', color:'#C4546A', borderTop: suggestions.length ? '0.5px solid #eee' : 'none' }}>✦ From HueMatch community</div>
+                  )}
+                  {communitySuggestions.map(s => (
+                    <button key={s.id} onClick={() => { setNewName(s.name); setNewBrand(s.brand); setNewHex(s.hex); setNewTypes(s.types); setNewCode(s.code); setSuggestions([]); setCommunitySuggestions([]) }}
+                      style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'8px 12px', border:'none', background:'#FDF8F8', cursor:'pointer', textAlign:'left' as const }}>
+                      <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+                        <div style={{ width:24, height:30, borderRadius:4, background:s.hex, border:'0.5px solid rgba(0,0,0,0.08)' }} />
+                        {s.photo_url && <img src={s.photo_url} alt={s.name} style={{ width:24, height:30, borderRadius:4, objectFit:'cover' }} />}
+                      </div>
+                      <div style={{ flex:1 }}>
+                        <p style={{ fontSize:12, fontWeight:500, color:'#1a1a2e', margin:0 }}>{s.name}</p>
+                        <p style={{ fontSize:10, color:'#6b6b80', margin:0 }}>{s.brand}</p>
+                      </div>
+                      <span style={{ fontSize:9, color:'#C4546A', flexShrink:0 }}>Community ✦</span>
                     </button>
                   ))}
                 </div>
@@ -768,9 +813,20 @@ export default function OwnerScreen() {
 
             <label style={lbl}>Product code (optional)</label>
             <input placeholder="e.g. GC H008" value={newCode} onChange={e => setNewCode(e.target.value)} style={{ ...inp(), marginBottom:16 }} />
-
+<div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', background:'#f8f7f9', borderRadius:10, border:'0.5px solid #eee', marginBottom:16 }}>
+              <div>
+                <p style={{ fontSize:13, fontWeight:500, color:'#1a1a2e', margin:0 }}>Share with community</p>
+                <p style={{ fontSize:10, color:'#a0a0b0', margin:'2px 0 0' }}>{newIsPublic ? 'Other salons can find this color' : 'Only visible in your salon'}</p>
+              </div>
+              <button onClick={() => setNewIsPublic(!newIsPublic)}
+                style={{ width:40, height:22, borderRadius:11, border:'none', cursor:'pointer', background: newIsPublic ? '#1D9E75' : '#ddd', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+                <div style={{ position:'absolute', top:3, left: newIsPublic ? 21 : 3, width:16, height:16, borderRadius:'50%', background:'white', transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.15)' }} />
+              </button>
+            </div>
+            
             <button onClick={addColor}
               style={{ width:'100%', height:50, background:'#C4546A', color:'white', border:'none', borderRadius:12, fontSize:14, fontWeight:500, fontFamily:'Outfit, sans-serif', cursor:'pointer' }}>
+             
               Add to inventory ✦
             </button>
           </div>
