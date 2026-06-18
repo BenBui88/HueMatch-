@@ -51,6 +51,7 @@ export default function OwnerScreen() {
   const [showAddColor,  setShowAddColor]  = useState(false)
   const [editingColor,  setEditingColor]  = useState<Color|null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string|null>(null)
+  const [enlargedPhoto, setEnlargedPhoto] = useState<string|null>(null)  
   const [filterType,    setFilterType]    = useState('All')
   const [searchQ,       setSearchQ]       = useState('')
 
@@ -397,7 +398,7 @@ export default function OwnerScreen() {
               <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 18px', borderBottom:'0.5px solid #eee' }}>
                 <div style={{ display:'flex', gap:4, flexShrink:0 }}>
                   <div style={{ width:28, height:42, borderRadius:6, background:c.hex, border:'0.5px solid rgba(0,0,0,0.08)' }} />
-                  {c.photo_url && <img src={c.photo_url} alt={c.name} style={{ width:28, height:42, borderRadius:6, objectFit:'cover', border:'0.5px solid rgba(0,0,0,0.08)' }} />}
+                 {c.photo_url && <img src={c.photo_url} alt={c.name} onClick={() => setEnlargedPhoto(c.photo_url)} style={{ width:28, height:42, borderRadius:6, objectFit:'cover', border:'0.5px solid rgba(0,0,0,0.08)', cursor:'zoom-in' }} />}
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <p style={{ fontSize:13, fontWeight:500, color:'#1a1a2e', margin:0 }}>{c.name}</p>
@@ -511,6 +512,15 @@ export default function OwnerScreen() {
         </div>
       )}
 
+      {/* ══ PHOTO LIGHTBOX ══ */}
+      {enlargedPhoto && (
+        <div onClick={() => setEnlargedPhoto(null)}
+          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', zIndex:60, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <img src={enlargedPhoto} alt="polish" style={{ maxWidth:'100%', maxHeight:'85vh', borderRadius:12, objectFit:'contain' }} />
+          <button onClick={() => setEnlargedPhoto(null)}
+            style={{ position:'absolute', top:20, right:20, width:36, height:36, borderRadius:'50%', background:'rgba(255,255,255,0.2)', border:'none', cursor:'pointer', fontSize:18, color:'white' }}>✕</button>
+        </div>
+      )}
       {/* ══ EDIT COLOR POPUP ══ */}
       {editingColor && (
         <>
