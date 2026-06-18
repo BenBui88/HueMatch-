@@ -85,12 +85,16 @@ export default function OwnerScreen() {
     } catch (e) { console.log('No salon yet') }
   }
 
-  const loadColors = async () => {
+ const loadColors = async () => {
     if (!salonId) return
     setLoadingColors(true)
     try {
       const { data } = await supabase.from('colors').select('*').eq('salon_id', salonId).order('created_at', { ascending: true })
-      if (data) setColors(data.map(c => ({ id: c.id, name: c.name, brand: c.brand || '', hex: c.hex || '#C4546A', types: c.types || ['Gel'], code: c.code || '', is_public: c.is_public ?? true, photo_url: c.photo_url || '' })))
+      if (data) setColors(data.map(c => ({
+        id: c.id, name: c.name, brand: c.brand || '',
+        hex: c.hex || '#C4546A', types: c.types || ['Gel'],
+        code: c.code || '', is_public: c.is_public ?? true, photo_url: c.photo_url || ''
+      })))
     } catch (e) { console.log('Error loading colors') }
     finally { setLoadingColors(false) }
   }
