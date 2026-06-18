@@ -17,14 +17,14 @@ interface Color {
 
 export default function OwnerScreen() {
   const navigate = useNavigate()
-  const logoInputRef  = useRef<HTMLInputElement>(null)
-  const profileImgRef = useRef<HTMLInputElement>(null)
+  const logoInputRef    = useRef<HTMLInputElement>(null)
+  const profileImgRef   = useRef<HTMLInputElement>(null)
   const polishCamRef    = useRef<HTMLInputElement>(null)
   const polishLibRef    = useRef<HTMLInputElement>(null)
 
   const [activeTab, setActiveTab] = useState<'salon'|'inventory'|'analytics'|'profile'>('salon')
 
-  const [salonId,     setSalonId]     = useState<string | null>(null)
+  const [salonId,     setSalonId]     = useState<string|null>(null)
   const [salonName,   setSalonName]   = useState('')
   const [location,    setLocation]    = useState('')
   const [phone,       setPhone]       = useState('')
@@ -49,9 +49,8 @@ export default function OwnerScreen() {
   const [colors,        setColors]        = useState<Color[]>([])
   const [loadingColors, setLoadingColors] = useState(false)
   const [showAddColor,  setShowAddColor]  = useState(false)
-  const [editingColor,    setEditingColor]    = useState<Color | null>(null)
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
-  
+  const [editingColor,  setEditingColor]  = useState<Color|null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string|null>(null)
   const [filterType,    setFilterType]    = useState('All')
   const [searchQ,       setSearchQ]       = useState('')
 
@@ -60,8 +59,8 @@ export default function OwnerScreen() {
   const [newHex,        setNewHex]        = useState('#C4546A')
   const [newTypes,      setNewTypes]      = useState<string[]>(['Gel'])
   const [newCode,       setNewCode]       = useState('')
-  const [suggestions,   setSuggestions]   = useState<Color[]>([])
   const [newIsPublic,   setNewIsPublic]   = useState(true)
+  const [suggestions,   setSuggestions]   = useState<Color[]>([])
   const [communitySuggestions, setCommunitySuggestions] = useState<Color[]>([])
 
   const [polishPreview, setPolishPreview] = useState('')
@@ -78,23 +77,37 @@ export default function OwnerScreen() {
     try {
       const { data } = await supabase.from('salons').select('*').limit(1).single()
       if (data) {
-        setSalonId(data.id); setSalonName(data.name || '')
-        setLocation(data.address || ''); setPhone(data.phone || '')
-        setWebpage(data.website || ''); setBooking(data.booking_url || '')
+        setSalonId(data.id)
+        setSalonName(data.name || '')
+        setLocation(data.address || '')
+        setPhone(data.phone || '')
+        setWebpage(data.website || '')
+        setBooking(data.booking_url || '')
       }
     } catch (e) { console.log('No salon yet') }
   }
 
- const loadColors = async () => {
+  const loadColors = async () => {
     if (!salonId) return
     setLoadingColors(true)
     try {
-      const { data } = await supabase.from('colors').select('*').eq('salon_id', salonId).order('created_at', { ascending: true })
-      if (data) setColors(data.map(c => ({
-        id: c.id, name: c.name, brand: c.brand || '',
-        hex: c.hex || '#C4546A', types: c.types || ['Gel'],
-        code: c.code || '', is_public: c.is_public ?? true, photo_url: c.photo_url || ''
-      })))
+      const { data } = await supabase
+        .from('colors')
+        .select('*')
+        .eq('salon_id', salonId)
+        .order('created_at', { ascending: true })
+      if (data) {
+        setColors(data.map(c => ({
+          id: c.id,
+          name: c.name,
+          brand: c.brand || '',
+          hex: c.hex || '#C4546A',
+          types: c.types || ['Gel'],
+          code: c.code || '',
+          is_public: c.is_public ?? true,
+          photo_url: c.photo_url || ''
+        })))
+      }
     } catch (e) { console.log('Error loading colors') }
     finally { setLoadingColors(false) }
   }
@@ -104,9 +117,13 @@ export default function OwnerScreen() {
     setSaving(true)
     try {
       if (salonId) {
-        await supabase.from('salons').update({ name: salonName, address: location, phone, website: webpage, booking_url: booking }).eq('id', salonId)
+        await supabase.from('salons').update({
+          name: salonName, address: location, phone, website: webpage, booking_url: booking
+        }).eq('id', salonId)
       } else {
-        const { data } = await supabase.from('salons').insert({ name: salonName, address: location, phone, website: webpage, booking_url: booking }).select().single()
+        const { data } = await supabase.from('salons').insert({
+          name: salonName, address: location, phone, website: webpage, booking_url: booking
+        }).select().single()
         if (data) setSalonId(data.id)
       }
       setSaved(true); setTimeout(() => setSaved(false), 2000)
@@ -120,14 +137,28 @@ export default function OwnerScreen() {
     let currentSalonId = salonId
     if (!currentSalonId) {
       if (!salonName) { alert('Please save your salon profile first.'); setActiveTab('salon'); return }
-      const { data } = await supabase.from('salons').insert({ name: salonName, address: location, phone, website: webpage, booking_url: booking }).select().single()
+      const { data } = await supabase.from('salons').insert({
+        name: salonName, address: location, phone, website: webpage, booking_url: booking
+      }).select().single()
       if (data) { setSalonId(data.id); currentSalonId = data.id }
     }
     try {
-      const { data } = await supabase.from('colors').insert({ salon_id: currentSalonId, name: newName, brand: newBrand, hex: newHex, types: newTypes, code: newCode }).select().single()
+      const { data } = await supabase.from('colors').insert({
+        salon_id: currentSalonId,
+        name: newName, brand: newBrand, hex: newHex,
+        types: newTypes, code: newCode,
+        is_public: newIsPublic,
+        photo_url: polishPreview || ''
+      }).select().single()
       if (data) {
-        setColors(prev => [...prev, { id: data.id, name: data.name, brand: data.brand || '', hex: data.hex || '#C4546A', types: data.types || ['Gel'], code: data.code || '' }])
-        resetColorForm(); setShowAddColor(false)
+        setColors(prev => [...prev, {
+          id: data.id, name: data.name, brand: data.brand || '',
+          hex: data.hex || '#C4546A', types: data.types || ['Gel'],
+          code: data.code || '', is_public: data.is_public ?? true,
+          photo_url: data.photo_url || ''
+        }])
+        resetColorForm()
+        setShowAddColor(false)
       }
     } catch (e) { alert('Error saving color.') }
   }
@@ -135,6 +166,7 @@ export default function OwnerScreen() {
   const deleteColor = async (id: string) => {
     await supabase.from('colors').delete().eq('id', id)
     setColors(prev => prev.filter(c => c.id !== id))
+    setConfirmDeleteId(null)
   }
 
   const updateColorHex = async (id: string, hex: string) => {
@@ -146,7 +178,8 @@ export default function OwnerScreen() {
   const handleProfileImg  = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) setProfileImg(URL.createObjectURL(f)) }
   const handlePolishPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return
-    setPolishPreview(URL.createObjectURL(f)); setAiColorNote(''); setScanningColor(false)
+    setPolishPreview(URL.createObjectURL(f))
+    setAiColorNote(''); setScanningColor(false)
   }
 
   const sampleAndAI = (pctX: number, pctY: number, imgEl: HTMLImageElement) => {
@@ -157,7 +190,7 @@ export default function OwnerScreen() {
     const px = Math.round(pctX * imgEl.naturalWidth)
     const py = Math.round(pctY * imgEl.naturalHeight)
     const area = 10
-    const d = ctx.getImageData(Math.max(0, px-area), Math.max(0, py-area), area*2, area*2).data
+    const d = ctx.getImageData(Math.max(0,px-area), Math.max(0,py-area), area*2, area*2).data
     let r = 0, g = 0, b = 0, cnt = 0
     for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i+1]; b += d[i+2]; cnt++ }
     r = Math.round(r/cnt); g = Math.round(g/cnt); b = Math.round(b/cnt)
@@ -199,9 +232,7 @@ export default function OwnerScreen() {
   const onColorNameInput = async (val: string) => {
     setNewName(val)
     if (val.length < 2) { setSuggestions([]); setCommunitySuggestions([]); return }
-    // Local suggestions
     setSuggestions(colors.filter(c => c.name.toLowerCase().includes(val.toLowerCase())).slice(0,3))
-    // Community suggestions from other salons
     try {
       const { data } = await supabase.from('colors')
         .select('*')
@@ -209,11 +240,15 @@ export default function OwnerScreen() {
         .eq('is_public', true)
         .neq('salon_id', salonId)
         .limit(4)
-      if (data) setCommunitySuggestions(data.map(c => ({ id: c.id, name: c.name, brand: c.brand || '', hex: c.hex || '#C4546A', types: c.types || ['Gel'], code: c.code || '', is_public: true, photo_url: c.photo_url || '' })))
+      if (data) setCommunitySuggestions(data.map(c => ({
+        id: c.id, name: c.name, brand: c.brand || '',
+        hex: c.hex || '#C4546A', types: c.types || ['Gel'],
+        code: c.code || '', is_public: true, photo_url: c.photo_url || ''
+      })))
     } catch { setCommunitySuggestions([]) }
   }
 
-const resetColorForm = () => {
+  const resetColorForm = () => {
     setNewName(''); setNewBrand('OPI'); setNewHex('#C4546A')
     setNewTypes(['Gel']); setNewCode(''); setNewIsPublic(true)
     setPolishPreview(''); setAiColorNote(''); setScanningColor(false)
@@ -265,8 +300,9 @@ const resetColorForm = () => {
 
       <input ref={logoInputRef}  type="file" accept="image/*" onChange={handleLogoUpload}  style={{ display:'none' }} />
       <input ref={profileImgRef} type="file" accept="image/*" onChange={handleProfileImg}  style={{ display:'none' }} />
-      <input ref={polishCamRef} type="file" accept="image/*" capture="environment" onChange={handlePolishPhoto} style={{ display:'none' }} />
-      
+      <input ref={polishCamRef}  type="file" accept="image/*" capture="environment" onChange={handlePolishPhoto} style={{ display:'none' }} />
+      <input ref={polishLibRef}  type="file" accept="image/*" onChange={handlePolishPhoto} style={{ display:'none' }} />
+
       <div style={{ display:'flex', justifyContent:'space-between', padding:'12px 20px 4px', fontSize:11, fontWeight:500 }}>
         <span>9:41</span><span>●●●</span>
       </div>
@@ -278,7 +314,7 @@ const resetColorForm = () => {
         </span>
       </div>
 
-      {/* ══ SALON TAB ══════════════════════════════════════════════════ */}
+      {/* ══ SALON TAB ══ */}
       {activeTab === 'salon' && (
         <div style={{ padding:'0 18px' }}>
           <div style={{ textAlign:'center', marginBottom:20 }}>
@@ -316,7 +352,7 @@ const resetColorForm = () => {
         </div>
       )}
 
-      {/* ══ INVENTORY TAB ══════════════════════════════════════════════ */}
+      {/* ══ INVENTORY TAB ══ */}
       {activeTab === 'inventory' && (
         <div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 18px', marginBottom:12 }}>
@@ -356,8 +392,7 @@ const resetColorForm = () => {
               <p style={{ fontSize:13, margin:'0 0 4px' }}>{colors.length === 0 ? 'No colors yet' : 'No colors found'}</p>
               <p style={{ fontSize:11 }}>{colors.length === 0 ? 'Tap + Add color to build your inventory' : 'Try a different filter'}</p>
             </div>
-          ) :
-           filteredColors.map(c => (
+          ) : filteredColors.map(c => (
             <div key={c.id}>
               <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 18px', borderBottom:'0.5px solid #eee' }}>
                 <div style={{ display:'flex', gap:4, flexShrink:0 }}>
@@ -367,26 +402,24 @@ const resetColorForm = () => {
                 <div style={{ flex:1, minWidth:0 }}>
                   <p style={{ fontSize:13, fontWeight:500, color:'#1a1a2e', margin:0 }}>{c.name}</p>
                   <p style={{ fontSize:10, color:'#6b6b80', margin:'2px 0 0' }}>{c.brand}{c.code ? ' · '+c.code : ''}</p>
-               <div style={{ display:'flex', alignItems:'center', flexWrap:'wrap' as const, gap:2 }}>
+                  <div style={{ display:'flex', alignItems:'center', flexWrap:'wrap' as const, gap:2 }}>
                     {c.types.map(t => <TypeBadge key={t} type={t} />)}
                     <span style={{ fontSize:9, padding:'1px 6px', borderRadius:999, background: c.is_public ? '#E1F5EE' : '#f0f0f0', color: c.is_public ? '#1D9E75' : '#a0a0b0', marginTop:3 }}>
                       {c.is_public ? '✦ Public' : '🔒 Private'}
                     </span>
                   </div>
                 </div>
-                <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:5 }}>
+                <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'flex-end', gap:5 }}>
                   <button onClick={() => setEditingColor(c)}
                     style={{ fontSize:10, color:'#2C2B4B', border:'0.5px solid #ddd', background:'#EEEDF8', borderRadius:6, cursor:'pointer', padding:'3px 8px' }}>Edit</button>
                   <button onClick={() => setConfirmDeleteId(c.id)}
                     style={{ fontSize:10, color:'#E24B4A', border:'none', background:'none', cursor:'pointer', padding:0 }}>Remove</button>
                 </div>
               </div>
-
-              {/* 2-step delete confirmation */}
               {confirmDeleteId === c.id && (
                 <div style={{ margin:'0 18px 8px', padding:'10px 12px', background:'#FCEBEB', borderRadius:10, border:'0.5px solid #F7C1C1', display:'flex', alignItems:'center', gap:10 }}>
                   <p style={{ fontSize:12, color:'#E24B4A', margin:0, flex:1 }}>Delete <strong>{c.name}</strong>? This cannot be undone.</p>
-                  <button onClick={() => { deleteColor(c.id); setConfirmDeleteId(null) }}
+                  <button onClick={() => deleteColor(c.id)}
                     style={{ height:28, padding:'0 10px', background:'#E24B4A', color:'white', border:'none', borderRadius:6, fontSize:11, cursor:'pointer', fontFamily:'Outfit, sans-serif', flexShrink:0 }}>
                     Yes, delete
                   </button>
@@ -397,11 +430,11 @@ const resetColorForm = () => {
                 </div>
               )}
             </div>
-          )) }
+          ))}
         </div>
       )}
 
-      {/* ══ ANALYTICS TAB ══════════════════════════════════════════════ */}
+      {/* ══ ANALYTICS TAB ══ */}
       {activeTab === 'analytics' && (
         <div style={{ textAlign:'center', padding:'3rem 1.5rem', color:'#a0a0b0' }}>
           <div style={{ fontSize:40, marginBottom:12 }}>📊</div>
@@ -410,7 +443,7 @@ const resetColorForm = () => {
         </div>
       )}
 
-      {/* ══ PROFILE TAB ════════════════════════════════════════════════ */}
+      {/* ══ PROFILE TAB ══ */}
       {activeTab === 'profile' && (
         <div>
           <div style={{ textAlign:'center', padding:'0 18px 20px' }}>
@@ -465,7 +498,7 @@ const resetColorForm = () => {
           <SettingRow icon="📞" label="Contact HueMatch" />
           <SettingRow icon="📄" label="Terms & privacy" />
 
-          <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column' as const, gap:10 }}>
             <button onClick={saveProfile}
               style={{ width:'100%', height:48, background: profileSaved ? '#1D9E75' : '#C4546A', color:'white', border:'none', borderRadius:12, fontSize:14, fontWeight:500, fontFamily:'Outfit, sans-serif', cursor:'pointer', transition:'background 0.3s' }}>
               {profileSaved ? '✓ Saved!' : 'Save profile ✦'}
@@ -478,25 +511,18 @@ const resetColorForm = () => {
         </div>
       )}
 
-      {/* ══ ADD COLOR POPUP ════════════════════════════════════════════ */}
-      {showAddColor && (
-        <>
-          {/* ══ EDIT COLOR POPUP ══════════════════════════════════════ */}
+      {/* ══ EDIT COLOR POPUP ══ */}
       {editingColor && (
         <>
-          <div onClick={() => setEditingColor(null)}
-            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:40 }} />
-          <div style={{ position:'fixed', top:'5%', left:'50%', transform:'translateX(-50%)', width:'92%', maxWidth:390, background:'white', borderRadius:20, padding:'1.25rem', zIndex:50, boxShadow:'0 4px 24px rgba(0,0,0,0.2)' }}>
-
+          <div onClick={() => setEditingColor(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:40 }} />
+          <div style={{ position:'fixed', top:'5%', left:'50%', transform:'translateX(-50%)', width:'92%', maxWidth:390, background:'white', borderRadius:20, padding:'1.25rem', zIndex:50, boxShadow:'0 4px 24px rgba(0,0,0,0.2)', maxHeight:'85vh', overflowY:'auto' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
               <p style={{ fontSize:16, fontWeight:500, color:'#1a1a2e', margin:0 }}>Edit color</p>
-              <button onClick={() => setEditingColor(null)}
-                style={{ width:28, height:28, borderRadius:'50%', background:'#f0f0f0', border:'none', cursor:'pointer', fontSize:14 }}>✕</button>
+              <button onClick={() => setEditingColor(null)} style={{ width:28, height:28, borderRadius:'50%', background:'#f0f0f0', border:'none', cursor:'pointer', fontSize:14 }}>✕</button>
             </div>
 
             <label style={lbl}>Color name</label>
-            <input value={editingColor.name} onChange={e => setEditingColor({...editingColor, name: e.target.value})}
-              style={inp({ marginBottom:12 })} />
+            <input value={editingColor.name} onChange={e => setEditingColor({...editingColor, name: e.target.value})} style={inp({ marginBottom:12 })} />
 
             <label style={lbl}>Brand</label>
             <select value={editingColor.brand} onChange={e => setEditingColor({...editingColor, brand: e.target.value})}
@@ -508,9 +534,7 @@ const resetColorForm = () => {
             <div style={{ display:'flex', gap:8, marginBottom:12 }}>
               {(['Gel','Regular','SNS'] as const).map(t => (
                 <button key={t} onClick={() => {
-                  const types = editingColor.types.includes(t)
-                    ? editingColor.types.filter(x => x !== t)
-                    : [...editingColor.types, t]
+                  const types = editingColor.types.includes(t) ? editingColor.types.filter(x => x !== t) : [...editingColor.types, t]
                   setEditingColor({...editingColor, types})
                 }}
                   style={{ flex:1, height:40, borderRadius:10, border: editingColor.types.includes(t) ? '2px solid #C4546A' : '0.5px solid #ddd', background: editingColor.types.includes(t) ? '#FDF0F2' : 'white', color: editingColor.types.includes(t) ? '#C4546A' : '#6b6b80', fontSize:12, cursor:'pointer', fontFamily:'Outfit, sans-serif' }}>
@@ -530,15 +554,24 @@ const resetColorForm = () => {
 
             <label style={lbl}>Product code (optional)</label>
             <input value={editingColor.code} onChange={e => setEditingColor({...editingColor, code: e.target.value})}
-              placeholder="e.g. GC H008" style={inp({ marginBottom:16 })} />
+              placeholder="e.g. GC H008" style={inp({ marginBottom:12 })} />
+
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', background:'#f8f7f9', borderRadius:10, border:'0.5px solid #eee', marginBottom:16 }}>
+              <div>
+                <p style={{ fontSize:13, fontWeight:500, color:'#1a1a2e', margin:0 }}>Share with community</p>
+                <p style={{ fontSize:10, color:'#a0a0b0', margin:'2px 0 0' }}>{editingColor.is_public ? 'Other salons can find this' : 'Only visible in your salon'}</p>
+              </div>
+              <button onClick={() => setEditingColor({...editingColor, is_public: !editingColor.is_public})}
+                style={{ width:40, height:22, borderRadius:11, border:'none', cursor:'pointer', background: editingColor.is_public ? '#1D9E75' : '#ddd', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+                <div style={{ position:'absolute', top:3, left: editingColor.is_public ? 21 : 3, width:16, height:16, borderRadius:'50%', background:'white', transition:'left 0.2s' }} />
+              </button>
+            </div>
 
             <button onClick={async () => {
               await supabase.from('colors').update({
-                name: editingColor.name,
-                brand: editingColor.brand,
-                hex: editingColor.hex,
-                types: editingColor.types,
-                code: editingColor.code,
+                name: editingColor.name, brand: editingColor.brand,
+                hex: editingColor.hex, types: editingColor.types,
+                code: editingColor.code, is_public: editingColor.is_public
               }).eq('id', editingColor.id)
               setColors(prev => prev.map(c => c.id === editingColor.id ? editingColor : c))
               setEditingColor(null)
@@ -549,20 +582,22 @@ const resetColorForm = () => {
           </div>
         </>
       )}
-          <div onClick={() => { setShowAddColor(false); resetColorForm() }}
-            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:40 }} />
+
+      {/* ══ ADD COLOR POPUP ══ */}
+      {showAddColor && (
+        <>
+          <div onClick={() => { setShowAddColor(false); resetColorForm() }} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:40 }} />
           <div style={{ position:'fixed', top:'3%', left:'50%', transform:'translateX(-50%)', width:'92%', maxWidth:390, background:'white', borderRadius:20, padding:'1.25rem 1.25rem 1.5rem', zIndex:50, boxShadow:'0 4px 24px rgba(0,0,0,0.2)', maxHeight:'92vh', overflowY:'auto' }}>
 
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem' }}>
               <p style={{ fontSize:16, fontWeight:500, color:'#1a1a2e', margin:0 }}>Add polish color</p>
-              <button onClick={() => { setShowAddColor(false); resetColorForm() }}
-                style={{ width:28, height:28, borderRadius:'50%', background:'#f0f0f0', border:'none', cursor:'pointer', fontSize:14 }}>✕</button>
+              <button onClick={() => { setShowAddColor(false); resetColorForm() }} style={{ width:28, height:28, borderRadius:'50%', background:'#f0f0f0', border:'none', cursor:'pointer', fontSize:14 }}>✕</button>
             </div>
 
             <label style={lbl}>Color name</label>
             <div style={{ position:'relative', marginBottom:12 }}>
               <input placeholder="e.g. Lavender Dusk" value={newName} onChange={e => onColorNameInput(e.target.value)} style={inp()} />
-            {(suggestions.length > 0 || communitySuggestions.length > 0) && (
+              {(suggestions.length > 0 || communitySuggestions.length > 0) && (
                 <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'white', border:'0.5px solid #ddd', borderRadius:10, boxShadow:'0 4px 12px rgba(0,0,0,0.1)', zIndex:10, overflow:'hidden' }}>
                   {suggestions.length > 0 && (
                     <div style={{ padding:'6px 12px 2px', fontSize:9, fontWeight:500, textTransform:'uppercase' as const, letterSpacing:'0.08em', color:'#a0a0b0' }}>Your inventory</div>
@@ -642,120 +677,65 @@ const resetColorForm = () => {
                     <p key={tip} style={{ fontSize:11, color:'#6b6b80', margin:'3px 0', lineHeight:1.4 }}>{tip}</p>
                   ))}
                 </div>
-                <input ref={polishLibRef} type="file" accept="image/*" onChange={handlePolishPhoto} style={{ display:'none' }} />
-<div style={{ display:'flex', gap:8, marginBottom:10 }}>
-  <button onClick={() => polishCamRef.current?.click()}
-    style={{ flex:1, height:72, border:'1.5px dashed #F4C0D1', borderRadius:10, background:'#FDF0F2', cursor:'pointer', display:'flex', flexDirection:'column' as const, alignItems:'center', justifyContent:'center', gap:4 }}>
-    <span style={{ fontSize:24 }}>📷</span>
-    <p style={{ fontSize:11, fontWeight:500, color:'#C4546A', margin:0 }}>Take photo</p>
-  </button>
-  <button onClick={() => polishLibRef.current?.click()}
-    style={{ flex:1, height:72, border:'1.5px dashed #ddd', borderRadius:10, background:'#f8f7f9', cursor:'pointer', display:'flex', flexDirection:'column' as const, alignItems:'center', justifyContent:'center', gap:4 }}>
-    <span style={{ fontSize:24 }}>🖼️</span>
-    <p style={{ fontSize:11, fontWeight:500, color:'#6b6b80', margin:0 }}>Upload photo</p>
-  </button>
-</div>
+                <div style={{ display:'flex', gap:8, marginBottom:10 }}>
+                  <button onClick={() => polishCamRef.current?.click()}
+                    style={{ flex:1, height:72, border:'1.5px dashed #F4C0D1', borderRadius:10, background:'#FDF0F2', cursor:'pointer', display:'flex', flexDirection:'column' as const, alignItems:'center', justifyContent:'center', gap:4 }}>
+                    <span style={{ fontSize:24 }}>📷</span>
+                    <p style={{ fontSize:11, fontWeight:500, color:'#C4546A', margin:0 }}>Take photo</p>
+                  </button>
+                  <button onClick={() => polishLibRef.current?.click()}
+                    style={{ flex:1, height:72, border:'1.5px dashed #ddd', borderRadius:10, background:'#f8f7f9', cursor:'pointer', display:'flex', flexDirection:'column' as const, alignItems:'center', justifyContent:'center', gap:4 }}>
+                    <span style={{ fontSize:24 }}>🖼️</span>
+                    <p style={{ fontSize:11, fontWeight:500, color:'#6b6b80', margin:0 }}>Upload photo</p>
+                  </button>
+                </div>
               </>
             )}
 
-           {polishPreview && !scanningColor && !aiColorNote && (
+            {polishPreview && !scanningColor && !aiColorNote && (
               <>
                 <div style={{ background:'#EEEDF8', border:'0.5px solid rgba(44,43,75,0.15)', borderRadius:10, padding:'8px 12px', marginBottom:8, display:'flex', alignItems:'center', gap:7 }}>
                   <span style={{ fontSize:16 }}>👆</span>
                   <p style={{ fontSize:11, color:'#2C2B4B', margin:0, lineHeight:1.4 }}>
-                    <strong>Pinch to zoom</strong>, drag to move, then <strong>tap ✕ to extract</strong> that color
+                    <strong>Pinch to zoom</strong>, drag to move, then tap anywhere to extract color at ✕
                   </p>
                 </div>
-
-                {/* Zoomable pan container */}
                 <div
                   style={{ position:'relative', borderRadius:10, overflow:'hidden', marginBottom:8, border:'1.5px solid #C4546A', height:220, background:'#f8f8f8', touchAction:'none' }}
                   ref={(el) => {
                     if (!el) return
-                    // Set up pinch zoom and pan
-                    let scale = 1, startDist = 0
-                    let panX = 0, panY = 0
-                    let startPanX = 0, startPanY = 0
-                    let lastTouchX = 0, lastTouchY = 0
-                    let isPanning = false
-
+                    let scale = 1, startDist = 0, panX = 0, panY = 0, startPanX = 0, startPanY = 0, lastTouchX = 0, lastTouchY = 0, isPanning = false
                     const img = el.querySelector('img') as HTMLImageElement
-                    const crosshair = el.querySelector('.crosshair') as HTMLElement
                     if (!img) return
-
-                    const applyTransform = () => {
-                      img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`
-                      img.style.transformOrigin = 'center center'
-                    }
-
+                    const applyTransform = () => { img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; img.style.transformOrigin = 'center center' }
                     el.ontouchstart = (e) => {
-                      if (e.touches.length === 2) {
-                        const dx = e.touches[0].clientX - e.touches[1].clientX
-                        const dy = e.touches[0].clientY - e.touches[1].clientY
-                        startDist = Math.sqrt(dx*dx + dy*dy)
-                      } else if (e.touches.length === 1) {
-                        isPanning = true
-                        lastTouchX = e.touches[0].clientX
-                        lastTouchY = e.touches[0].clientY
-                        startPanX = panX
-                        startPanY = panY
-                      }
+                      if (e.touches.length === 2) { const dx = e.touches[0].clientX - e.touches[1].clientX; const dy = e.touches[0].clientY - e.touches[1].clientY; startDist = Math.sqrt(dx*dx + dy*dy) }
+                      else if (e.touches.length === 1) { isPanning = true; lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY; startPanX = panX; startPanY = panY }
                     }
-
                     el.ontouchmove = (e) => {
                       e.preventDefault()
-                      if (e.touches.length === 2) {
-                        const dx = e.touches[0].clientX - e.touches[1].clientX
-                        const dy = e.touches[0].clientY - e.touches[1].clientY
-                        const dist = Math.sqrt(dx*dx + dy*dy)
-                        scale = Math.min(4, Math.max(1, scale * (dist / startDist)))
-                        startDist = dist
-                        applyTransform()
-                      } else if (e.touches.length === 1 && isPanning) {
-                        panX = startPanX + (e.touches[0].clientX - lastTouchX)
-                        panY = startPanY + (e.touches[0].clientY - lastTouchY)
-                        applyTransform()
-                      }
+                      if (e.touches.length === 2) { const dx = e.touches[0].clientX - e.touches[1].clientX; const dy = e.touches[0].clientY - e.touches[1].clientY; const dist = Math.sqrt(dx*dx + dy*dy); scale = Math.min(4, Math.max(1, scale * (dist / startDist))); startDist = dist; applyTransform() }
+                      else if (e.touches.length === 1 && isPanning) { panX = startPanX + (e.touches[0].clientX - lastTouchX); panY = startPanY + (e.touches[0].clientY - lastTouchY); applyTransform() }
                     }
-
                     el.ontouchend = () => { isPanning = false }
                   }}
-                  onClick={(e) => {
-                    // On tap extract color at crosshair center
-                    const rect = e.currentTarget.getBoundingClientRect()
-                    const imgEl = e.currentTarget.querySelector('img') as HTMLImageElement
-                    if (!imgEl) return
-                    // Sample from center of container (where crosshair is)
-                    const pctX = 0.5
-                    const pctY = 0.5
-                    sampleAndAI(pctX, pctY, imgEl)
-                  }}
+                  onClick={() => { const el = document.querySelector('.polish-img-container img') as HTMLImageElement; if (el) sampleAndAI(0.5, 0.5, el) }}
                 >
-                  <img
-                    src={polishPreview}
-                    alt="polish"
-                    crossOrigin="anonymous"
-                    style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', transition:'transform 0.05s', cursor:'crosshair' }}
-                  />
-                  {/* Fixed crosshair in center */}
-                  <div className="crosshair" style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', pointerEvents:'none', zIndex:10 }}>
+                  <img className="polish-img" src={polishPreview} alt="polish" crossOrigin="anonymous"
+                    style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', cursor:'crosshair' }} />
+                  <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', pointerEvents:'none', zIndex:10 }}>
                     <div style={{ position:'relative', width:40, height:40 }}>
-                      {/* Horizontal line */}
                       <div style={{ position:'absolute', top:'50%', left:0, right:0, height:1.5, background:'#C4546A', transform:'translateY(-50%)' }} />
-                      {/* Vertical line */}
                       <div style={{ position:'absolute', left:'50%', top:0, bottom:0, width:1.5, background:'#C4546A', transform:'translateX(-50%)' }} />
-                      {/* Center dot */}
                       <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:8, height:8, borderRadius:'50%', background:'#C4546A', border:'2px solid white' }} />
                     </div>
                   </div>
-                  {/* Tap hint */}
                   <div style={{ position:'absolute', bottom:8, left:0, right:0, display:'flex', justifyContent:'center', pointerEvents:'none' }}>
                     <div style={{ background:'rgba(196,84,106,0.85)', borderRadius:20, padding:'4px 12px' }}>
-                      <p style={{ fontSize:10, color:'white', margin:0, fontWeight:500 }}>Tap anywhere to extract color at ✕</p>
+                      <p style={{ fontSize:10, color:'white', margin:0, fontWeight:500 }}>Tap to extract color at ✕</p>
                     </div>
                   </div>
                 </div>
-
                 <div style={{ display:'flex', gap:8, marginBottom:8 }}>
                   <button onClick={() => polishCamRef.current?.click()}
                     style={{ flex:1, height:32, background:'#FDF0F2', border:'0.5px solid #F4C0D1', borderRadius:8, fontSize:11, color:'#C4546A', cursor:'pointer' }}>
@@ -768,6 +748,7 @@ const resetColorForm = () => {
                 </div>
               </>
             )}
+
             {scanningColor && (
               <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 12px', background:'#EEEDF8', borderRadius:10, marginBottom:10 }}>
                 <span style={{ fontSize:16 }}>✦</span>
@@ -786,20 +767,13 @@ const resetColorForm = () => {
                     <p style={{ fontSize:12, fontWeight:500, color:'#1D9E75', margin:0 }}>✓ {aiColorNote}</p>
                     <p style={{ fontSize:10, color:'#6b6b80', margin:'2px 0 0' }}>Tap a different spot to re-pick</p>
                   </div>
-                 <div style={{ display:'flex', gap:8, marginBottom:8 }}>
-  <button onClick={() => polishCamRef.current?.click()}
-    style={{ flex:1, height:32, background:'#FDF0F2', border:'0.5px solid #F4C0D1', borderRadius:8, fontSize:11, color:'#C4546A', cursor:'pointer' }}>
-    📷 Retake
-  </button>
-  <button onClick={() => { setPolishPreview(''); setAiColorNote('') }}
-    style={{ flex:1, height:32, background:'transparent', border:'0.5px solid #ddd', borderRadius:8, fontSize:11, color:'#6b6b80', cursor:'pointer' }}>
-    ← Start over
-  </button>
-</div>
+                  <button onClick={() => { setPolishPreview(''); setAiColorNote('') }} style={{ fontSize:10, color:'#C4546A', border:'none', background:'none', cursor:'pointer', flexShrink:0 }}>Retake</button>
                 </div>
-                <div style={{ position:'relative', borderRadius:10, overflow:'hidden', border:'0.5px solid #ddd', cursor:'crosshair' }} onClick={handleImageTap}>
-                  <img src={polishPreview} alt="polish" crossOrigin="anonymous" style={{ width:'100%', maxHeight:120, objectFit:'contain', display:'block', background:'#f8f8f8' }} />
-                </div>
+                {polishPreview && (
+                  <div style={{ position:'relative', borderRadius:10, overflow:'hidden', border:'0.5px solid #ddd', cursor:'crosshair' }} onClick={handleImageTap}>
+                    <img src={polishPreview} alt="polish" crossOrigin="anonymous" style={{ width:'100%', maxHeight:120, objectFit:'contain', display:'block', background:'#f8f8f8' }} />
+                  </div>
+                )}
               </div>
             )}
 
@@ -808,15 +782,16 @@ const resetColorForm = () => {
                 style={{ width:40, height:40, border:'0.5px solid #ddd', borderRadius:8, cursor:'pointer', padding:3, flexShrink:0 }} />
               <div style={{ flex:1 }}>
                 <p style={{ fontSize:10, color:'#a0a0b0', margin:'0 0 3px' }}>Or adjust manually</p>
-                <input type="text" value={newHex} onChange={e => { if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) setNewHex(e.target.value) }}
+                <input type="text" value={newHex} onChange={e => { if(/^#[0-9a-fA-F]{6}$/.test(e.target.value)) setNewHex(e.target.value) }}
                   style={{ width:'100%', height:30, border:'0.5px solid #ddd', borderRadius:7, padding:'0 8px', fontSize:12, outline:'none', fontFamily:'Outfit, sans-serif', boxSizing:'border-box' }} />
               </div>
               <div style={{ width:40, height:40, borderRadius:8, background:newHex, border:'0.5px solid rgba(0,0,0,0.08)', flexShrink:0 }} />
             </div>
 
             <label style={lbl}>Product code (optional)</label>
-            <input placeholder="e.g. GC H008" value={newCode} onChange={e => setNewCode(e.target.value)} style={{ ...inp(), marginBottom:16 }} />
-<div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', background:'#f8f7f9', borderRadius:10, border:'0.5px solid #eee', marginBottom:16 }}>
+            <input placeholder="e.g. GC H008" value={newCode} onChange={e => setNewCode(e.target.value)} style={inp({ marginBottom:12 })} />
+
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', background:'#f8f7f9', borderRadius:10, border:'0.5px solid #eee', marginBottom:16 }}>
               <div>
                 <p style={{ fontSize:13, fontWeight:500, color:'#1a1a2e', margin:0 }}>Share with community</p>
                 <p style={{ fontSize:10, color:'#a0a0b0', margin:'2px 0 0' }}>{newIsPublic ? 'Other salons can find this color' : 'Only visible in your salon'}</p>
@@ -826,10 +801,9 @@ const resetColorForm = () => {
                 <div style={{ position:'absolute', top:3, left: newIsPublic ? 21 : 3, width:16, height:16, borderRadius:'50%', background:'white', transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.15)' }} />
               </button>
             </div>
-            
+
             <button onClick={addColor}
               style={{ width:'100%', height:50, background:'#C4546A', color:'white', border:'none', borderRadius:12, fontSize:14, fontWeight:500, fontFamily:'Outfit, sans-serif', cursor:'pointer' }}>
-             
               Add to inventory ✦
             </button>
           </div>
@@ -844,7 +818,7 @@ const resetColorForm = () => {
           { icon:'👤', label:'profile',   tab:'profile'   },
         ].map(n => (
           <button key={n.tab} onClick={() => setActiveTab(n.tab as typeof activeTab)}
-            style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, flex:1, background:'none', border:'none', cursor:'pointer', color: activeTab===n.tab ? '#C4546A' : '#a0a0b0', fontFamily:'Outfit, sans-serif' }}>
+            style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:3, flex:1, background:'none', border:'none', cursor:'pointer', color: activeTab===n.tab ? '#C4546A' : '#a0a0b0', fontFamily:'Outfit, sans-serif' }}>
             <span style={{ fontSize:20 }}>{n.icon}</span>
             <span style={{ fontSize:9 }}>{n.label}</span>
           </button>
