@@ -700,35 +700,148 @@ export default function OwnerScreen() {
                     <strong>Pinch to zoom</strong>, drag to move, then tap anywhere to extract color at ✕
                   </p>
                 </div>
-                <div
-                  style={{ position:'relative', borderRadius:10, overflow:'hidden', marginBottom:8, border:'1.5px solid #C4546A', height:220, background:'#f8f8f8', touchAction:'none' }}
-                  ref={(el) => {
-                    if (!el) return
-                    let scale = 1, startDist = 0, panX = 0, panY = 0, startPanX = 0, startPanY = 0, lastTouchX = 0, lastTouchY = 0, isPanning = false
-                    const img = el.querySelector('img') as HTMLImageElement
-                    if (!img) return
-                    const applyTransform = () => { img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; img.style.transformOrigin = 'center center' }
-                    el.ontouchstart = (e) => {
-                      if (e.touches.length === 2) { const dx = e.touches[0].clientX - e.touches[1].clientX; const dy = e.touches[0].clientY - e.touches[1].clientY; startDist = Math.sqrt(dx*dx + dy*dy) }
-                      else if (e.touches.length === 1) { isPanning = true; lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY; startPanX = panX; startPanY = panY }
-                    }
-                    el.ontouchmove = (e) => {
-                      e.preventDefault()
-                      if (e.touches.length === 2) { const dx = e.touches[0].clientX - e.touches[1].clientX; const dy = e.touches[0].clientY - e.touches[1].clientY; const dist = Math.sqrt(dx*dx + dy*dy); scale = Math.min(4, Math.max(1, scale * (dist / startDist))); startDist = dist; applyTransform() }
-                      else if (e.touches.length === 1 && isPanning) { panX = startPanX + (e.touches[0].clientX - lastTouchX); panY = startPanY + (e.touches[0].clientY - lastTouchY); applyTransform() }
-                    }
-                    el.ontouchend = () => { isPanning = false }
-                  }}
-                  onClick={() => { const el = document.querySelector('.polish-img-container img') as HTMLImageElement; if (el) sampleAndAI(0.5, 0.5, el) }}
-                >
-                  <img className="polish-img" src={polishPreview} alt="polish" crossOrigin="anonymous"
-                    style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', cursor:'crosshair' }} />
-                  <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', pointerEvents:'none', zIndex:10 }}>
-                    <div style={{ position:'relative', width:40, height:40 }}>
-                      <div style={{ position:'absolute', top:'50%', left:0, right:0, height:1.5, background:'#C4546A', transform:'translateY(-50%)' }} />
-                      <div style={{ position:'absolute', left:'50%', top:0, bottom:0, width:1.5, background:'#C4546A', transform:'translateX(-50%)' }} />
-                      <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:8, height:8, borderRadius:'50%', background:'#C4546A', border:'2px solid white' }} />
-                    </div>
+               <div
+  style={{ position:'relative', borderRadius:10, overflow:'hidden', marginBottom:8, border:'1.5px solid #C4546A', height:220, background:'#f8f8f8', touchAction:'none' }}
+  ref={(el) => {
+    if (!el) return
+    let scale = 1, startDist = 0, panX = 0, panY = 0, startPanX = 0, startPanY = 0, lastTouchX = 0, lastTouchY = 0, isPanning = false
+
+    const img = el.querySelector('img') as HTMLImageElement
+    if (!img) return
+
+    const applyTransform = () => {
+      img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`
+      img.style.transformOrigin = 'center center'
+    }
+
+    const sampleAtCenter = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0)
+        const rect = el.getBoundingClientRect()
+        // crosshair is at center of container
+        const pctX = 0.5 - (panX / rect.width / scale)
+        const pctY = 0.5 - (panY / rect.height / scale)
+        const px = Math.round(Math.max(0, Math.min(1, pctX)) * img.naturalWidth)
+        const py = Math.round(Math.max(0, Math.min(1, pctY)) * img.naturalHeight)
+        const area = 8
+        const d = ctx.getImageData(Math.max(0,px-area), Math.max(0,py-area), area*2, area*2).data
+        let r = 0, g = 0, b = 0, cnt = 0
+        for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i+1]; b += d[i+2]; cnt++ }
+        if (cnt > 0) {
+          r = Math.round(r/cnt); g = Math.round(g/cnt); b = Math.round(b/cnt)
+          const hex = '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('')
+          // Update preview dot
+          const dot = el.querySelector('.color-preview-dot') as HTMLElement
+          if (dot) dot.style.background = hex
+          return hex
+        }
+      } catch (e) {}
+      return null
+    }
+
+    el.ontouchstart = (e) => {
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX
+        const dy = e.touches[0].clientY - e.touches[1].clientY
+        startDist = Math.sqrt(dx*dx + dy*dy)
+      } else if (e.touches.length === 1) {
+        isPanning = true
+        lastTouchX = e.touches[0].clientX
+        lastTouchY = e.touches[0].clientY
+        startPanX = panX; startPanY = panY
+      }
+    }
+
+    el.ontouchmove = (e) => {
+      e.preventDefault()
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX
+        const dy = e.touches[0].clientY - e.touches[1].clientY
+        const dist = Math.sqrt(dx*dx + dy*dy)
+        scale = Math.min(4, Math.max(1, scale * (dist / startDist)))
+        startDist = dist
+        applyTransform()
+        sampleAtCenter()
+      } else if (e.touches.length === 1 && isPanning) {
+        panX = startPanX + (e.touches[0].clientX - lastTouchX)
+        panY = startPanY + (e.touches[0].clientY - lastTouchY)
+        applyTransform()
+        sampleAtCenter()
+      }
+    }
+
+    el.ontouchend = () => {
+      isPanning = false
+      // On finger lift — commit the color and send to AI
+      const hex = sampleAtCenter()
+      if (hex) {
+        setNewHex(hex)
+        setAiColorNote('')
+        setScanningColor(true)
+        fetch(`${SUPABASE_URL}/functions/v1/match-colors`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+          body: JSON.stringify({ outfitHex: hex, skinName: 'polish bottle', skinHex: hex, undertone: 'neutral', nailType: 'Gel' })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data) && data[0]) { setNewHex(data[0].hex); setAiColorNote(`AI matched: ${data[0].name}`) }
+          else setAiColorNote('Color sampled from photo')
+        })
+        .catch(() => setAiColorNote('Color sampled from photo'))
+        .finally(() => setScanningColor(false))
+      }
+    }
+
+    // Also handle click for desktop
+    el.onclick = () => {
+      const hex = sampleAtCenter()
+      if (hex) {
+        setNewHex(hex)
+        setScanningColor(true)
+        fetch(`${SUPABASE_URL}/functions/v1/match-colors`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+          body: JSON.stringify({ outfitHex: hex, skinName: 'polish bottle', skinHex: hex, undertone: 'neutral', nailType: 'Gel' })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data) && data[0]) { setNewHex(data[0].hex); setAiColorNote(`AI matched: ${data[0].name}`) }
+          else setAiColorNote('Color sampled from photo')
+        })
+        .catch(() => setAiColorNote('Color sampled from photo'))
+        .finally(() => setScanningColor(false))
+      }
+    }
+  }}
+>
+  <img src={polishPreview} alt="polish" crossOrigin="anonymous"
+    style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', cursor:'crosshair' }} />
+
+  {/* Fixed crosshair in center */}
+  <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', pointerEvents:'none', zIndex:10 }}>
+    <div style={{ position:'relative', width:40, height:40 }}>
+      <div style={{ position:'absolute', top:'50%', left:0, right:0, height:1.5, background:'#C4546A', transform:'translateY(-50%)' }} />
+      <div style={{ position:'absolute', left:'50%', top:0, bottom:0, width:1.5, background:'#C4546A', transform:'translateX(-50%)' }} />
+      <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:8, height:8, borderRadius:'50%', background:'#C4546A', border:'2px solid white' }} />
+    </div>
+  </div>
+
+  {/* Real-time color preview dot */}
+  <div style={{ position:'absolute', top:10, right:10, zIndex:10, pointerEvents:'none' }}>
+    <div className="color-preview-dot" style={{ width:36, height:36, borderRadius:'50%', background:newHex, border:'3px solid white', boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }} />
+  </div>
+
+  {/* Hint */}
+  <div style={{ position:'absolute', bottom:8, left:0, right:0, display:'flex', justifyContent:'center', pointerEvents:'none' }}>
+    <div style={{ background:'rgba(196,84,106,0.85)', borderRadius:20, padding:'4px 12px' }}>
+      <p style={{ fontSize:10, color:'white', margin:0, fontWeight:500 }}>Move image under ✕ · lift finger to extract</p>
+    </div>
+  </div>
+</div>
                   </div>
                   <div style={{ position:'absolute', bottom:8, left:0, right:0, display:'flex', justifyContent:'center', pointerEvents:'none' }}>
                     <div style={{ background:'rgba(196,84,106,0.85)', borderRadius:20, padding:'4px 12px' }}>
