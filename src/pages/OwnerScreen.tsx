@@ -89,9 +89,8 @@ export default function OwnerScreen() {
     if (!salonId) return
     setLoadingColors(true)
     try {
-  const { data } = await supabase.from('colors').insert({ salon_id: currentSalonId, name: newName, brand: newBrand, hex: newHex, types: newTypes, code: newCode, is_public: newIsPublic, photo_url: polishPreview ? polishPreview : '' }).select().single()
-      if (data) {
-        setColors(prev => [...prev, { id: data.id, name: data.name, brand: data.brand || '', hex: data.hex || '#C4546A', types: data.types || ['Gel'], code: data.code || '', is_public: data.is_public ?? true, photo_url: data.photo_url || '' }])
+      const { data } = await supabase.from('colors').select('*').eq('salon_id', salonId).order('created_at', { ascending: true })
+      if (data) setColors(data.map(c => ({ id: c.id, name: c.name, brand: c.brand || '', hex: c.hex || '#C4546A', types: c.types || ['Gel'], code: c.code || '', is_public: c.is_public ?? true, photo_url: c.photo_url || '' })))
     } catch (e) { console.log('Error loading colors') }
     finally { setLoadingColors(false) }
   }
