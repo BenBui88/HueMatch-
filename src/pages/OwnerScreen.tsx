@@ -851,7 +851,6 @@ export default function OwnerScreen() {
       <p style={{ fontSize:10, color:'white', margin:0, fontWeight:500 }}>Move image under ✕ · lift finger to extract</p>
     </div>
 
-                 </div>
                   <div style={{ position:'absolute', bottom:8, left:0, right:0, display:'flex', justifyContent:'center', pointerEvents:'none' }}>
                     <div style={{ background:'rgba(196,84,106,0.85)', borderRadius:20, padding:'4px 12px' }}>
                       <p style={{ fontSize:10, color:'white', margin:0, fontWeight:500 }}>Tap to extract color at ✕</p>
