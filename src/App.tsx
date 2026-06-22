@@ -254,17 +254,44 @@ function MatchScreen() {
     setResults(null); setLoading(true); let i=0
     const iv = setInterval(()=>{setThinking(steps[Math.min(i++,steps.length-1)])},700)
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/match-colors`,{
+      // Fetch real salon inventory
+      const inventoryRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/colors?is_public=eq.true&select=name,brand,hex,types&limit=60`,
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      )
+      const inventory = await inventoryRes.json()
+
+      if (!Array.isArray(inventory) || inventory.length === 0) {
+        // No inventory yet — use generic AI
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/match-colors`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+          body:JSON.stringify({outfitHex,skinName:skinName||'medium',skinHex:skinHex||'#D4956A',undertone,nailType})
+        })
+        const colors = await res.json()
+        setResults(Array.isArray(colors) ? colors : FALLBACK)
+        return
+      }
+
+      // Filter by nail type
+      const filtered = inventory.filter((c: any) => c.types && c.types.includes(nailType))
+      const pool = filtered.length > 0 ? filtered : inventory
+
+      // Match against real inventory
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/match-inventory`,{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-        body:JSON.stringify({outfitHex,skinName:skinName||'medium',skinHex:skinHex||'#D4956A',undertone,nailType})
+        body:JSON.stringify({
+          outfitHex, skinName: skinName||'medium',
+          skinHex: skinHex||'#D4956A', undertone, nailType,
+          inventory: pool.slice(0,30)
+        })
       })
       const colors = await res.json()
       setResults(Array.isArray(colors) ? colors : FALLBACK)
     } catch { setResults(FALLBACK) }
     finally { clearInterval(iv); setLoading(false) }
   }
-
   return (
     <div style={{fontFamily:'Outfit, sans-serif',display:'flex',flexDirection:'column',minHeight:'100%',paddingBottom:80}}>
       <input ref={outfitInputRef} type="file" accept="image/*" onChange={handleOutfitFile} style={{display:'none'}} />
