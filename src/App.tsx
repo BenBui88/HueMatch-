@@ -264,6 +264,7 @@ function MatchScreen() {
         { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
       )
       const inventory = await inventoryRes.json()
+      console.log('Inventory fetch:', inventory)
 
       if (!Array.isArray(inventory) || inventory.length === 0) {
         // No inventory yet — use generic AI
