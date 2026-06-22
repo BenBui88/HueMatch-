@@ -228,9 +228,11 @@ function MatchScreen() {
   }
 
   const handleOutfitFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file=e.target.files?.[0]; if(!file) return
+    const file = e.target.files?.[0]; if (!file) return
     setOutfitPreview(URL.createObjectURL(file))
-    extractColor(file, hex=>{setOutfitHexState(hex);setOutfitHex(hex);setOutfitSet(true)})
+    setOutfitSet(false)
+    setOutfitTapped(false)
+    setOutfitScanning(false)
   }
 
   const handleSkinFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -318,18 +320,78 @@ function MatchScreen() {
         <div>
           <p style={{fontSize:10,fontWeight:500,textTransform:'uppercase',letterSpacing:'0.1em',color:'#a0a0b0',marginBottom:6}}>👗 Outfit photo</p>
           <div style={{border:outfitSet?'1.5px solid #C4546A':'0.5px solid #ddd',borderRadius:12,overflow:'hidden'}}>
-            <button onClick={()=>outfitInputRef.current?.click()}
-              style={{width:'100%',height:100,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,cursor:'pointer',border:'none',background:outfitSet?outfitHex+'22':'#f8f7f9',padding:0,position:'relative',overflow:'hidden'}}>
-              {outfitPreview
-                ? <img src={outfitPreview} alt="outfit" style={{width:'100%',height:'100%',objectFit:'cover',position:'absolute',inset:0}} />
-                : <><span style={{fontSize:28}}>📷</span><p style={{fontSize:10,color:'#a0a0b0',margin:0}}>Tap to upload<br/>or take photo</p></>}
-            </button>
-            {outfitSet && (
-              <div style={{display:'flex',alignItems:'center',gap:6,padding:'6px 8px',borderTop:'0.5px solid #eee',background:'white'}}>
-                <div style={{width:20,height:20,borderRadius:4,background:outfitHex,border:'0.5px solid #ddd',flexShrink:0}} />
-                <span style={{fontSize:10,color:'#6b6b80',flex:1}}>{outfitHex}</span>
-                <button onClick={()=>{setOutfitSet(false);setOutfitPreview('')}} style={{fontSize:9,color:'#C4546A',border:'none',background:'none',cursor:'pointer'}}>Redo</button>
-              </div>
+           {!outfitPreview ? (
+              <button onClick={() => outfitInputRef.current?.click()}
+                style={{ width:'100%', height:100, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6, cursor:'pointer', border:'none', background:'#f8f7f9', padding:0 }}>
+                <span style={{fontSize:28}}>📷</span>
+                <p style={{fontSize:10,color:'#a0a0b0',margin:0}}>Tap to upload<br/>or take photo</p>
+              </button>
+            ) : !outfitSet ? (
+              <>
+                <div style={{ background:'#EEEDF8', padding:'6px 8px', display:'flex', alignItems:'center', gap:6 }}>
+                  <span style={{fontSize:12}}>👆</span>
+                  <p style={{fontSize:10,color:'#2C2B4B',margin:0}}><strong>Tap your outfit</strong> to extract its color</p>
+                </div>
+                <div
+                  style={{ position:'relative', cursor:'crosshair', overflow:'hidden' }}
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect()
+                    const pctX = (e.clientX - rect.left) / rect.width
+                    const pctY = (e.clientY - rect.top) / rect.height
+                    const imgEl = e.currentTarget.querySelector('img') as HTMLImageElement
+                    if (!imgEl) return
+                    const canvas = document.createElement('canvas')
+                    canvas.width = imgEl.naturalWidth; canvas.height = imgEl.naturalHeight
+                    const ctx = canvas.getContext('2d')!
+                    ctx.drawImage(imgEl, 0, 0)
+                    const px = Math.round(pctX * imgEl.naturalWidth)
+                    const py = Math.round(pctY * imgEl.naturalHeight)
+                    const area = 10
+                    const d = ctx.getImageData(Math.max(0,px-area), Math.max(0,py-area), area*2, area*2).data
+                    let r=0,g=0,b=0,cnt=0
+                    for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];cnt++}
+                    r=Math.round(r/cnt);g=Math.round(g/cnt);b=Math.round(b/cnt)
+                    const tappedHex = '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('')
+                    setOutfitHexState(tappedHex); setOutfitHex(tappedHex)
+                    setOutfitScanning(true)
+                    // AI cleanup via vision
+                    fetch(`${SUPABASE_URL}/functions/v1/match-colors`,{
+                      method:'POST',
+                      headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+                      body:JSON.stringify({outfitHex:tappedHex,skinName:'outfit photo',skinHex:tappedHex,undertone:'neutral',nailType:'Gel'})
+                    })
+                    .then(r=>r.json())
+                    .then(data=>{
+                      if(Array.isArray(data)&&data[0]){
+                        setOutfitHexState(data[0].hex); setOutfitHex(data[0].hex)
+                      }
+                      setOutfitSet(true); setOutfitTapped(true)
+                    })
+                    .catch(()=>{ setOutfitSet(true); setOutfitTapped(true) })
+                    .finally(()=>setOutfitScanning(false))
+                  }}
+                >
+                  <img src={outfitPreview} alt="outfit" crossOrigin="anonymous"
+                    style={{ width:'100%', height:100, objectFit:'cover', display:'block' }} />
+                  <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none' }}>
+                    {outfitScanning
+                      ? <div style={{ background:'rgba(44,43,75,0.7)', borderRadius:20, padding:'4px 10px' }}><p style={{ fontSize:10, color:'white', margin:0 }}>✦ Reading color...</p></div>
+                      : <div style={{ background:'rgba(196,84,106,0.8)', borderRadius:20, padding:'4px 10px' }}><p style={{ fontSize:10, color:'white', margin:0 }}>👆 Tap outfit color</p></div>
+                    }
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ position:'relative', overflow:'hidden' }}>
+                  <img src={outfitPreview} alt="outfit" style={{ width:'100%', height:80, objectFit:'cover', display:'block' }} />
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:6,padding:'6px 8px',borderTop:'0.5px solid #eee',background:'white'}}>
+                  <div style={{width:20,height:20,borderRadius:4,background:outfitHex,border:'0.5px solid #ddd',flexShrink:0}} />
+                  <span style={{fontSize:10,color:'#6b6b80',flex:1}}>{outfitHex}</span>
+                  <button onClick={()=>{setOutfitSet(false);setOutfitTapped(false);setOutfitPreview('')}} style={{fontSize:9,color:'#C4546A',border:'none',background:'none',cursor:'pointer'}}>Redo</button>
+                </div>
+              </>
             )}
           </div>
         </div>
