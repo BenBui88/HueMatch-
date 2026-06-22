@@ -174,6 +174,8 @@ function MatchScreen() {
   const [outfitHex,     setOutfitHexState] = useState('#7C5C8A')
   const [outfitSet,     setOutfitSet]      = useState(false)
   const [outfitPreview, setOutfitPreview]  = useState('')
+  const [outfitTapped,  setOutfitTapped]   = useState(false)
+  const [outfitScanning, setOutfitScanning] = useState(false) 
   const [skinHex,       setSkinHexState]   = useState('')
   const [skinName,      setSkinNameState]  = useState('')
   const [undertone,     setUndertoneState] = useState('neutral')
