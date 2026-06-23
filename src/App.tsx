@@ -285,7 +285,11 @@ function MatchScreen() {
       // Match against real inventory
       const res = await fetch(`${SUPABASE_URL}/functions/v1/match-inventory`,{
         method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':`Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY
+        },
         body:JSON.stringify({
           outfitHex, skinName: skinName||'medium',
           skinHex: skinHex||'#D4956A', undertone, nailType,
@@ -293,7 +297,9 @@ function MatchScreen() {
         })
       })
       const colors = await res.json()
+      console.log('match-inventory response:', colors)
       setResults(Array.isArray(colors) ? colors : FALLBACK)
+      const colors = await res.json()
     } catch { setResults(FALLBACK) }
     finally { clearInterval(iv); setLoading(false) }
   }
